@@ -16,6 +16,13 @@
 - INFRA-03: Security groups configured
 - INFRA-04: HTTPS domain with Let's Encrypt
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-PLAN-01.md — Create security groups, launch EC2, allocate Elastic IP
+- [ ] 01-PLAN-02.md — Create RDS PostgreSQL instance, verify private connectivity
+- [ ] 01-PLAN-03.md — Install Node.js stack, deploy health check, configure Nginx + SSL
+
 **Success Criteria:**
 1. RDS Postgres instance accessible from EC2 only (psql test from EC2 succeeds, fails from elsewhere)
 2. EC2 instance running with Node.js 20 LTS, PM2 process manager, and Nginx reverse proxy
@@ -98,15 +105,15 @@
 
 ```
 Phase 1 (Infrastructure)
-    │
-    ▼
-Phase 2 (Core API) ──────► Unity team can start integration
-    │
-    ▼
-Phase 3 (OAuth) ─────────► Full auth suite complete
-    │
-    ▼
-Phase 4 (Push) ──────────► SIT Ready
+    |
+    v
+Phase 2 (Core API) -------> Unity team can start integration
+    |
+    v
+Phase 3 (OAuth) ----------> Full auth suite complete
+    |
+    v
+Phase 4 (Push) ------------> SIT Ready
 ```
 
 ## Requirement Coverage
@@ -125,4 +132,4 @@ Phase 4 (Push) ──────────► SIT Ready
 
 ---
 *Roadmap created: 2026-02-04*
-*Last updated: 2026-02-04 after initial creation*
+*Last updated: 2026-02-05 after Phase 1 planning*
