@@ -38,25 +38,21 @@ git pull origin main || error_exit "git pull failed"
 log "Installing dependencies..."
 pnpm install --frozen-lockfile || error_exit "pnpm install failed"
 
-# 4. Generate Prisma client
-log "Generating Prisma client..."
-cd packages/database
-pnpm run db:generate || error_exit "Prisma generate failed"
-cd "$APP_DIR"
-
-# 5. Run database migrations (NEVER use migrate dev in production)
+# 4. Run database migrations (NEVER use migrate dev in production)
 log "Running database migrations..."
-cd packages/database
 pnpm run db:deploy || error_exit "Prisma migrate deploy failed"
-cd "$APP_DIR"
 
-# 6. Build API
+# 5. Build API (includes db:generate via turbo pipeline)
 log "Building API..."
 pnpm run build --filter=@repo/api || error_exit "API build failed"
 
-# 7. Reload PM2
+# 6. Start or reload PM2
 log "Reloading PM2..."
-pm2 reload ecosystem.config.cjs --env production || error_exit "PM2 reload failed"
+if pm2 describe radstrat-api > /dev/null 2>&1; then
+  pm2 reload ecosystem.config.cjs || error_exit "PM2 reload failed"
+else
+  pm2 start ecosystem.config.cjs || error_exit "PM2 start failed"
+fi
 
 # 8. Save PM2 process list
 pm2 save || error_exit "PM2 save failed"
