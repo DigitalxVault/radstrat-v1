@@ -9,9 +9,9 @@ LOG_FILE="/var/log/radstrat-deploy.log"
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
 error_exit() { log "ERROR: $1"; exit 1; }
 
-# Safety check: warn if migrate dev found in any script
-if grep -rq "migrate dev" "$APP_DIR/deploy.sh" 2>/dev/null; then
-  log "WARNING: 'migrate dev' found in deploy script — this should NEVER run in production"
+# Safety check: warn if "prisma migrate dev" found in deploy script
+if grep -q "prisma migrate dev" "$APP_DIR/deploy.sh" 2>/dev/null; then
+  log "WARNING: 'prisma migrate dev' found in deploy script — this should NEVER run in production"
 fi
 
 log "=== Deployment started ==="
