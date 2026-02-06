@@ -1,14 +1,12 @@
-# RADStrat Backend
+# RADStrat v1
 
 ## What This Is
 
-Backend API for RADStrat, a radio telephony training mobile game for RSAF personnel. The backend handles authentication (email/password + Google/Apple OAuth), player progress storage, and push notifications. Unity mobile client consumes this API — Unity never touches the database directly.
+A backend API (Node.js + Prisma + Postgres) and admin dashboard (Next.js) for a Unity mobile training game used by Republic of Singapore Air Force (RSAF) service members. The backend handles whitelist-based player authentication, player progress persistence, push notifications via OneSignal, and provides an admin portal for user management, analytics, and push campaigns.
 
 ## Core Value
 
-**Users can authenticate and their game progress persists across sessions and devices.**
-
-If push notifications fail, the game still works. If OAuth fails, email login still works. But if auth or progress storage breaks, the game is unusable.
+Unity team can authenticate whitelisted RSAF players and save/load their training progress — this unblocks mobile game development and is the foundation everything else builds on.
 
 ## Requirements
 
@@ -18,57 +16,60 @@ If push notifications fail, the game still works. If OAuth fails, email login st
 
 ### Active
 
-- [ ] Email/password authentication (register, login, logout)
-- [ ] Google Sign-In (Unity obtains ID token, backend verifies)
-- [ ] Apple Sign-In (Unity obtains identity token, backend verifies)
-- [ ] JWT access tokens (short-lived) + refresh tokens (long-lived, stored hashed)
-- [ ] Player progress save/load (JSON blob storage)
-- [ ] Push notification device registration (iOS/Android tokens)
-- [ ] Push notification sending (training reminders)
-- [ ] Swagger/OpenAPI documentation at /docs
-- [ ] AWS infrastructure (EC2 + RDS Postgres)
-- [ ] HTTPS with staging domain (api-staging.radstrat.com or similar)
+- [ ] AWS infrastructure (RDS Postgres, EC2, security groups, HTTPS)
+- [ ] Whitelist-based player auth (temp password, forced change, JWT access+refresh)
+- [ ] Player progress save/load (JSON snapshots)
+- [ ] Device registration for push notifications (OneSignal player IDs)
+- [ ] Automated push notifications (inactivity reminders, streak nudges, daily reminders)
+- [ ] Admin push campaigns (create, send, schedule, cancel — no OneSignal UI access)
+- [ ] Admin authentication (single Super Admin role)
+- [ ] Admin user management (import whitelist, reset password, enable/disable)
+- [ ] Admin analytics (progress overview, per-user details, event trends)
+- [ ] Analytics event ingestion from Unity client
+- [ ] Admin dashboard frontend (Next.js)
+- [ ] Swagger/OpenAPI documentation at `/docs`
+- [ ] Production deployment with monitoring (CloudWatch)
 
 ### Out of Scope
 
-- Scenario content, audio files, gameplay logic — Unity-owned
-- Admin portal — not for v1
-- Analytics dashboards — not for v1
-- Leaderboards — not requested
-- Role validation — backend stores whatever JSON Unity sends, roles (ST, MAC, AFE) are Unity-side concepts
+- OAuth/social login — whitelist-only auth per RSAF requirements
+- Mobile app development — Unity team owns the client
+- Gameplay logic, scenarios, audio — Unity-owned
+- Real-time multiplayer/WebSocket — not needed for training game
+- Granular RBAC (multiple admin roles) — single Super Admin for v1
+- OneSignal UI access for admins — all push operations through backend API
 
 ## Context
 
-**Game domain**: Radio telephony training for military/aviation personnel. Users select a role (Security Trooper, Mindef Approved Contractor, or Airforce Engineer) for tutorial, then switch roles during gameplay based on scenario structure.
-
-**Team structure**: Full-stack dev (backend) + separate Unity game dev team. Swagger docs must be clear enough for Unity team to integrate without constant back-and-forth.
-
-**Target users**: Initially RSAF personnel, eventually public product (no special compliance requirements).
-
-**AWS experience**: New to AWS. Need guidance on infrastructure setup.
-
-**External dependencies** (all need setup):
-- Google Cloud Console — OAuth credentials for Google Sign-In
-- Apple Developer Portal — Sign In with Apple configuration
-- OneSignal — push notification service
-
-**Reference spec**: See `docs/Backend Build Spec.md` for detailed endpoint contracts, database schema, and security requirements.
+- **Client**: RSAF (Republic of Singapore Air Force) — military training context
+- **Unity team**: Building the mobile game, waiting on API endpoints ASAP for integration
+- **Spec document**: `docs/Backend Build Spec v2.1.md` — collaborative spec, source of truth
+- **Previous work**: Earlier planning docs deleted due to major auth model and feature changes
+- **Admin users**: RSAF administrators managing player accounts and sending push notifications
+- **Players**: RSAF service members using the Unity mobile game for training
+- **Push strategy**: DB-driven targeting (not OneSignal tag-driven) for v1
 
 ## Constraints
 
-- **Timeline**: SIT (System Integration Testing) deadline Feb 10, 2026 — 6 days from project start
-- **Tech stack**: Node.js + Express + Prisma ORM + PostgreSQL (per spec, non-negotiable)
-- **Infrastructure**: AWS EC2 + RDS in ap-southeast-1 (Singapore)
-- **Security**: RDS not public, HTTPS only, passwords hashed (bcrypt), refresh tokens hashed, rate limiting on auth endpoints
+- **Cloud**: AWS only (EC2 + RDS) — organizational requirement
+- **Runtime**: Node.js with TypeScript — team expertise
+- **ORM**: Prisma with PostgreSQL — spec requirement
+- **Push service**: OneSignal — spec requirement (account not yet created)
+- **Dashboard**: Next.js (React) — chosen during project initialization
+- **Timeline**: ASAP — Unity team is blocked waiting for auth + progress endpoints
+- **Security**: HTTPS only, RDS not public, password hashing, rate limiting on auth
+- **Admin model**: Single Super Admin role with full access (no granular RBAC in v1)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Roles stored in progress JSON, not validated by backend | Unity owns role logic, backend is dumb storage | — Pending |
-| OneSignal for push (not raw FCM) | Simpler setup, handles both iOS/Android | — Pending |
-| Email auth first, then OAuth | No external dependencies, unblocks Unity team faster | — Pending |
-| Option 1 deployment (Nginx + Let's Encrypt on EC2) | Faster than ALB setup for staging | — Pending |
+| Whitelist-only auth (no OAuth) | RSAF controls who accesses the system | — Pending |
+| Single Super Admin role | Simplifies v1, granular RBAC deferred | — Pending |
+| Next.js for admin dashboard | React ecosystem, SSR capabilities | — Pending |
+| DB-driven push targeting | More predictable than OneSignal tags | — Pending |
+| Prioritize auth + progress first | Unblocks Unity team integration ASAP | — Pending |
+| Node.js + Prisma + Postgres | Team expertise, spec requirement | — Pending |
 
 ---
-*Last updated: 2026-02-04 after initialization*
+*Last updated: 2026-02-06 after initialization*
