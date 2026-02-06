@@ -3,12 +3,16 @@ node_modules/
 
 # Environment
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Build output
 dist/
 build/
+.turbo/
+
+# Prisma generated client
+packages/database/generated/
 
 # IDE
 .idea/
@@ -23,6 +27,15 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# SSH keys
+*.pem
+
+# Local tools
+.serena/
+.skills/
+.claude/
+Sounds/
 
 # Planning docs (local-only, not tracked in git)
 .planning/
