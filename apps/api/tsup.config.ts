@@ -8,4 +8,5 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   noExternal: ['@repo/database', '@repo/shared'],
+  external: ['dotenv'],
 })
