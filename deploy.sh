@@ -20,6 +20,16 @@ log "=== Deployment started ==="
 cd "$APP_DIR" || error_exit "Cannot cd to $APP_DIR"
 log "Working directory: $(pwd)"
 
+# Load production environment variables
+if [ -f .env.production ]; then
+  set -a
+  source .env.production
+  set +a
+  log "Loaded .env.production"
+else
+  error_exit ".env.production not found — create it with DATABASE_URL"
+fi
+
 # 2. Pull latest code
 log "Pulling latest code..."
 git pull origin main || error_exit "git pull failed"
