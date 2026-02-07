@@ -36,6 +36,7 @@ logs/
 .skills/
 .claude/
 Sounds/
+CLAUDE.md
 
 # Planning docs (local-only, not tracked in git)
 .planning/

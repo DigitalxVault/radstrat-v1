@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalPassThroughEnv": ["DATABASE_URL"],
+  "globalPassThroughEnv": ["DATABASE_URL", "JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET", "JWT_ADMIN_ACCESS_SECRET", "JWT_ADMIN_REFRESH_SECRET", "CORS_ORIGIN"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "db:generate"],
