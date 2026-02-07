@@ -57,7 +57,7 @@ export async function buildApp() {
     openapi: {
       info: {
         title: 'RADStrat API',
-        description: 'Backend API for RSAF Unity Mobile Training Game',
+        description: 'Backend API for RADSTRAT Mobile Training Game',
         version: '1.0.0',
       },
       components: {
