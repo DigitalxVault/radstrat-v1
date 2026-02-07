@@ -20,8 +20,4 @@ jobs:
           script_stop: true
           script: |
             cd /home/ubuntu/radstrat
-            git pull origin main
-            pnpm install
-            pnpm build
-            pm2 reload radstrat-api
-            pm2 logs radstrat-api --lines 20 --nostream
+            bash deploy.sh
