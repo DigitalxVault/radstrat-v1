@@ -159,6 +159,16 @@ Build log tracking features, issues, debugging, and progress for the RADStrat ba
 - CORS production config (configurable via CORS_ORIGIN env var)
 - Enhanced error handler (429 rate limit, Zod validation → 400)
 
+#### GitHub Actions CI/CD (`324212f`)
+- **What:** Auto-deploy workflow (`.github/workflows/deploy.yml`) triggers on push to `main`
+- **How:** Uses `appleboy/ssh-action` to SSH into EC2 and run `deploy.sh`
+- **Purpose:** No more manual SSH deployments — push to main and it deploys automatically
+
+#### Production Deployment
+- **SUPER_ADMIN seeded:** `eugene.tan@magesstudio.com.sg` with `mustChangePassword: true`
+- **EC2 Security Group:** Updated to allow SSH from anywhere (for home WiFi access)
+- **JWT secrets:** 4 separate secrets added to `.env.production` on EC2 (player access/refresh, admin access/refresh)
+
 ### Documentation Deliverables
 - **docs/akshay.md** - Explanation of separate backend decision (per dev advisor's recommendation)
 - **docs/API.md** - Plain-language API reference for non-technical stakeholders
@@ -184,6 +194,30 @@ Build log tracking features, issues, debugging, and progress for the RADStrat ba
 - **Fix:** Exported `DbNull`, `JsonNull` and `Prisma.*` from database package index
 - **Lesson:** Prisma 7 utility values need explicit re-export from internal files
 
+#### 4. argon2 native module not found on EC2
+- **Issue:** Production deploy failed with `Cannot find package 'argon2'`
+- **Root cause:** `pnpm install` on EC2 had not fully completed (native C++ compilation needed)
+- **Fix:** Ran `pnpm install --frozen-lockfile` explicitly on EC2 before building
+- **Lesson:** argon2 requires native compilation — ensure build-essential is installed and pnpm install completes fully
+
+#### 5. @repo/shared raw TypeScript not importable at runtime (`0de575b`)
+- **Issue:** Production crashed with `Cannot find module '@repo/shared/schemas/common.js'`
+- **Root cause:** `@repo/shared` exports raw `.ts` files (no build step). Node.js can't import `.ts` at runtime.
+- **Fix:** Added `noExternal: ['@repo/shared']` to API's `tsup.config.ts` so tsup bundles shared schemas into the API build output
+- **Lesson:** Workspace packages exporting raw `.ts` must be bundled by consumers via `noExternal`
+
+#### 6. GitHub Actions deploy failing — DATABASE_URL not found
+- **Issue:** Workflow ran `pnpm build` directly without sourcing `.env.production`, so Prisma couldn't find DATABASE_URL
+- **Root cause:** Workflow had individual commands instead of using `deploy.sh` which sources env vars
+- **Fix:** Replaced individual commands with `bash deploy.sh` (`324212f`)
+- **Lesson:** Always delegate to `deploy.sh` — it handles env loading, migrations, build, and health checks
+
+#### 7. GitHub Actions SSH key format
+- **Issue:** Multiple workflow runs failed with `ssh: no key found`
+- **Root cause:** SSH private key pasted into GitHub Secrets with incorrect formatting
+- **Fix:** Re-pasted the full PEM key (including `-----BEGIN/END RSA PRIVATE KEY-----` headers) without extra whitespace
+- **Lesson:** GitHub Secrets must contain the exact PEM content — no extra blank lines, headers must be preserved
+
 ### Verification
 - Type checks pass (`pnpm check-types`)
 - Build succeeds (`pnpm build`)
@@ -192,6 +226,10 @@ Build log tracking features, issues, debugging, and progress for the RADStrat ba
 - Progress endpoints use optimistic concurrency (409 on version conflict)
 - Device register is idempotent (upsert by userId+platform)
 - Events accept batches (up to 100)
+- **Production deployed:** `https://api-radstrat.devsparksbuild.com/health` returns `{"status":"ok","database":"connected"}`
+- **Swagger UI live:** `https://api-radstrat.devsparksbuild.com/docs`
+- **GitHub Actions auto-deploy:** Push to main triggers deploy, confirmed working
+- **SUPER_ADMIN login:** Verified via Swagger UI (200 response with tokens)
 
 ---
 
