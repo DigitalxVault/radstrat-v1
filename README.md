@@ -2,7 +2,7 @@
 
 # RADStrat
 
-**Backend API & Admin Dashboard for RSAF Unity Mobile Training Game**
+**Backend API & Admin Dashboard for RADSTRAT Mobile Training Game**
 
 [![Deploy](https://img.shields.io/github/actions/workflow/status/DigitalxVault/radstrat-v1/deploy.yml?branch=main&label=deploy&logo=github)](https://github.com/DigitalxVault/radstrat-v1/actions)
 [![API](https://img.shields.io/badge/API-live-brightgreen?logo=fastify)](https://api-radstrat.devsparksbuild.com/health)
