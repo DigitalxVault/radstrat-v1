@@ -17,7 +17,7 @@
 
 ## Overview
 
-RADStrat is a military-grade backend system powering an RSAF (Republic of Singapore Air Force) Unity mobile training game. It provides player authentication, progress persistence, device management, event tracking, and admin user management — all secured with JWT token rotation and family-based reuse detection.
+RADStrat is a Unity mobile RT training game. It provides player authentication, progress persistence, device management, event tracking, and admin user management — all secured with JWT token rotation and family-based reuse detection.
 
 ### Key Highlights
 
@@ -36,22 +36,22 @@ RADStrat is a military-grade backend system powering an RSAF (Republic of Singap
 
 ```
                         ┌─────────────────────────────────────┐
-                        │          Turborepo Monorepo          │
+                        │          Turborepo Monorepo         │
                         │                                     │
   Unity Game ──────┐    │  apps/api          Fastify 5.7      │
-                   │    │  apps/dashboard    Next.js (Phase 4) │
-  Admin Panel ─────┼───▶│  packages/database Prisma 7          │
-                   │    │  packages/shared   Zod schemas       │
+                   │    │  apps/dashboard    Next.js (Phase 4)│
+  Admin Panel ─────┼───▶│  packages/database Prisma 7         │
+                   │    │  packages/shared   Zod schemas      │
   Swagger UI ──────┘    │                                     │
                         └──────────────┬──────────────────────┘
                                        │
                         ┌──────────────▼──────────────────────┐
-                        │        Production (AWS)              │
+                        │        Production (AWS)             │
                         │                                     │
                         │  EC2 ── Nginx (TLS) ── PM2 ── :3001 │
-                        │                  │                   │
-                        │            RDS PostgreSQL            │
-                        │           (private subnet)           │
+                        │                  │                  │
+                        │            RDS PostgreSQL           │
+                        │           (private subnet)          │
                         └─────────────────────────────────────┘
 ```
 
@@ -119,7 +119,7 @@ RADStrat is a military-grade backend system powering an RSAF (Republic of Singap
 
 ```
 ┌──────────────────┐       ┌──────────────────┐
-│      users       │       │  refresh_tokens   │
+│      users       │       │  refresh_tokens  │
 ├──────────────────┤       ├──────────────────┤
 │ id           PK  │──┐    │ id           PK  │
 │ email     UNIQUE │  ├───▶│ userId       FK  │
@@ -128,37 +128,37 @@ RADStrat is a military-grade backend system powering an RSAF (Republic of Singap
 │ passwordHash     │  │    │ expiresAt        │
 │ role             │  │    │ revokedAt        │
 │ isActive         │  │    └──────────────────┘
-│ mustChangePassword│  │
+│ mustChangePassword│ │
 │ lastLoginAt      │  │    ┌──────────────────┐
-└──────────────────┘  │    │ player_progress   │
+└──────────────────┘  │    │ player_progress  │
                       │    ├──────────────────┤
-                      ├───▶│ userId    FK, UQ  │
-                      │    │ progressData JSON │
-                      │    │ version      INT  │
+                      ├───▶│ userId    FK, UQ │
+                      │    │ progressData JSON│
+                      │    │ version      INT │
                       │    └──────────────────┘
                       │
                       │    ┌──────────────────┐
-                      ├───▶│     devices       │
+                      ├───▶│     devices      │
                       │    ├──────────────────┤
-                      │    │ userId       FK   │
-                      │    │ platform          │
-                      │    │ onesignalPlayerId │
+                      │    │ userId       FK  │
+                      │    │ platform         │
+                      │    │ onesignalPlayerId│
                       │    └──────────────────┘
                       │
                       │    ┌──────────────────┐
-                      └───▶│     events        │
+                      └───▶│     events       │
                            ├──────────────────┤
-                           │ userId       FK   │
-                           │ eventType         │
-                           │ payload     JSON  │
+                           │ userId       FK  │
+                           │ eventType        │
+                           │ payload     JSON │
                            └──────────────────┘
 
 ┌──────────────────┐       ┌──────────────────┐
-│  push_campaigns   │──────▶│  push_send_logs   │
+│  push_campaigns  │──────▶│   push_send_logs │
 ├──────────────────┤       ├──────────────────┤
-│ title, message    │       │ campaignId   FK  │
-│ audienceType      │       │ userId, deviceId │
-│ status            │       │ status           │
+│ title, message   │       │ campaignId   FK  │
+│ audienceType     │       │ userId, deviceId │
+│ status           │       │ status           │
 └──────────────────┘       └──────────────────┘
 ```
 
