@@ -40,3 +40,6 @@ CLAUDE.md
 
 # Planning docs (local-only, not tracked in git)
 .planning/
+
+# Project docs (local-only)
+.docs/
