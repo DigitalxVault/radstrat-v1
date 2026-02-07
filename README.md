@@ -4,7 +4,7 @@
 
 **Backend API & Admin Dashboard for RADSTRAT Mobile Training Game**
 
-[![Deploy](https://img.shields.io/github/actions/workflow/status/DigitalxVault/radstrat-v1/deploy.yml?branch=main&label=deploy&logo=github)](https://github.com/DigitalxVault/radstrat-v1/actions)
+[![Deploy](https://github.com/DigitalxVault/radstrat-v1/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/DigitalxVault/radstrat-v1/actions)
 [![API](https://img.shields.io/badge/API-live-brightgreen?logo=fastify)](https://api-radstrat.devsparksbuild.com/health)
 [![Swagger](https://img.shields.io/badge/docs-Swagger%20UI-85EA2D?logo=swagger)](https://api-radstrat.devsparksbuild.com/docs)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
