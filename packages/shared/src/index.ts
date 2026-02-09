@@ -49,3 +49,9 @@ export {
   submitEventsRequestSchema,
   eventsResponseSchema,
 } from './schemas/event.js'
+
+// Analytics schemas
+export { chartsResponseSchema } from './schemas/analytics.js'
+
+// Constants
+export { EVENT_TYPES } from './constants/event-types.js'

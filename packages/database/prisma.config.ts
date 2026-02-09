@@ -1,5 +1,9 @@
-import 'dotenv/config'
+import { config } from 'dotenv'
+import { resolve } from 'path'
 import { defineConfig, env } from 'prisma/config'
+
+// Load .env from monorepo root (2 levels up from packages/database/)
+config({ path: resolve(import.meta.dirname ?? '.', '../../.env') })
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',

@@ -1,0 +1,11 @@
+import { UserDetailCard } from '@/components/user-detail-card'
+
+export default async function UserDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+
+  return <UserDetailCard userId={id} />
+}
