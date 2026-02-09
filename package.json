@@ -10,7 +10,8 @@
     "check-types": "turbo run check-types",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
-    "db:deploy": "turbo run db:deploy"
+    "db:deploy": "turbo run db:deploy",
+    "db:seed": "pnpm --filter=@repo/database seed"
   },
   "devDependencies": {
     "dotenv": "^16.4.0",

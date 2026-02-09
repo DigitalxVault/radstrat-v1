@@ -20,3 +20,13 @@ export async function PATCH(
     body: JSON.stringify(body),
   })
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params
+  return apiProxy(`/admin/users/${id}`, {
+    method: 'DELETE',
+  })
+}

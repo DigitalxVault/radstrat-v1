@@ -11,6 +11,7 @@ import {
   Smartphone,
   Activity,
   KeyRound,
+  Pencil,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useUser, useUpdateUser } from '@/hooks/use-users'
 import { useUserAnalytics } from '@/hooks/use-analytics'
 import { ResetPasswordDialog } from '@/components/reset-password-dialog'
+import { EditUserDialog } from '@/components/edit-user-dialog'
 
 export function UserDetailCard({ userId }: { userId: string }) {
   const router = useRouter()
@@ -27,6 +29,7 @@ export function UserDetailCard({ userId }: { userId: string }) {
   const { data: analytics } = useUserAnalytics(userId)
   const updateUser = useUpdateUser()
   const [resetOpen, setResetOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   function handleToggleActive() {
     if (!user) return
@@ -70,6 +73,10 @@ export function UserDetailCard({ userId }: { userId: string }) {
           <p className="text-muted-foreground">{user.email}</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="size-4 mr-1" />
+            Edit
+          </Button>
           <Button variant="outline" onClick={() => setResetOpen(true)}>
             <KeyRound className="size-4 mr-1" />
             Reset Password
@@ -197,6 +204,14 @@ export function UserDetailCard({ userId }: { userId: string }) {
         open={resetOpen}
         onOpenChange={setResetOpen}
       />
+
+      {user && (
+        <EditUserDialog
+          user={user}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
     </div>
   )
 }

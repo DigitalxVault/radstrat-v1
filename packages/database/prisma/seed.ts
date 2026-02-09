@@ -1,0 +1,315 @@
+/**
+ * RADStrat v1 — Database Seed Script
+ *
+ * Creates demo players, progress records, events, and a Super Admin.
+ * Idempotent: uses upsert by email so re-running is safe.
+ *
+ * Run from monorepo root:
+ *   pnpm db:seed
+ *
+ * Or from packages/database:
+ *   pnpm seed
+ */
+
+import { config } from 'dotenv'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+// Load .env from monorepo root (3 levels up from packages/database/prisma/)
+const __dirname = dirname(fileURLToPath(import.meta.url))
+config({ path: resolve(__dirname, '../../../.env') })
+
+import { PrismaClient, Prisma } from '../generated/prisma/client.js'
+import { PrismaPg } from '@prisma/adapter-pg'
+import argon2 from 'argon2'
+
+// ---------------------------------------------------------------------------
+// Prisma client (standalone — not reusing the singleton from src/client.ts
+// because the seed runs outside the normal build pipeline)
+// ---------------------------------------------------------------------------
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+const prisma = new PrismaClient({ adapter })
+
+// ---------------------------------------------------------------------------
+// Argon2 helper — identical params to apps/api/src/lib/password.ts
+// ---------------------------------------------------------------------------
+
+async function hashPassword(password: string): Promise<string> {
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 19456, // 19 MiB (OWASP minimum)
+    timeCost: 2,
+    parallelism: 1,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Random integer in [min, max] inclusive */
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+/** Random date within the last `days` days */
+function randomRecentDate(days: number): Date {
+  const now = Date.now()
+  const offset = Math.random() * days * 24 * 60 * 60 * 1000
+  return new Date(now - offset)
+}
+
+/** Pick a random element from an array */
+function pick<T>(arr: T[]): T {
+  return arr[randInt(0, arr.length - 1)]
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const EVENT_TYPES = {
+  GAME_START: 'game_start',
+  GAME_COMPLETE: 'game_complete',
+  INITIAL_ASSESSMENT: 'initial_assessment',
+} as const
+
+const MODULES = [
+  'radio_telephony_basics',
+  'emergency_procedures',
+  'standard_phraseology',
+  'airspace_classification',
+  'weather_reporting',
+  'navigation_comms',
+] as const
+
+const SCENARIO_NAMES = [
+  'Tower Departure Clearance',
+  'Approach Frequency Change',
+  'Emergency Mayday Call',
+  'ATIS Copy & Readback',
+  'VFR Circuit Entry',
+  'IFR Clearance Delivery',
+  'Go-Around Procedure',
+  'Distress Relay',
+  'Weather Deviation Request',
+  'Position Report Enroute',
+] as const
+
+// ---------------------------------------------------------------------------
+// Player definitions — 10 Singaporean military-style names
+// ---------------------------------------------------------------------------
+
+interface PlayerDef {
+  firstName: string
+  lastName: string
+  isActive: boolean
+}
+
+const PLAYERS: PlayerDef[] = [
+  { firstName: 'Wei Ming', lastName: 'Tan', isActive: true },
+  { firstName: 'Jun Hao', lastName: 'Lim', isActive: true },
+  { firstName: 'Kai Wen', lastName: 'Ng', isActive: true },
+  { firstName: 'Zhi Hao', lastName: 'Chen', isActive: true },
+  { firstName: 'Yi Xuan', lastName: 'Wong', isActive: true },
+  { firstName: 'Jia Le', lastName: 'Ong', isActive: true },
+  { firstName: 'Rui En', lastName: 'Koh', isActive: true },
+  { firstName: 'Shi Ting', lastName: 'Goh', isActive: true },
+  { firstName: 'Ming Wei', lastName: 'Chua', isActive: false },
+  { firstName: 'Jia Hui', lastName: 'Lee', isActive: false },
+]
+
+const PLAYER_PASSWORD = 'DemoPlayer2025!'
+const ADMIN_PASSWORD = 'admin_admin01'
+
+// ---------------------------------------------------------------------------
+// Data generators
+// ---------------------------------------------------------------------------
+
+function generateProgressData(): Record<string, unknown> {
+  const completedScenarios = randInt(3, SCENARIO_NAMES.length)
+  const scenariosCompleted = SCENARIO_NAMES.slice(0, completedScenarios)
+
+  const bestScores: Record<string, number> = {}
+  for (const scenario of scenariosCompleted) {
+    bestScores[scenario] = randInt(60, 100)
+  }
+
+  const totalTrainingMinutes = randInt(30, 480)
+
+  return {
+    currentModule: pick([...MODULES]),
+    modulesUnlocked: MODULES.slice(0, randInt(1, MODULES.length)),
+    scenariosCompleted,
+    totalScenariosAvailable: SCENARIO_NAMES.length,
+    bestScores,
+    totalTrainingTime: totalTrainingMinutes * 60, // seconds
+    accuracyRate: parseFloat((Math.random() * 0.35 + 0.60).toFixed(3)), // 0.600 – 0.950
+    streak: randInt(0, 14),
+    rank: pick(['Recruit', 'Trainee', 'Cadet', 'Specialist', 'Expert']),
+    lastSessionAt: randomRecentDate(7).toISOString(),
+  }
+}
+
+function generateEventPayload(
+  eventType: string,
+): Record<string, unknown> | null {
+  switch (eventType) {
+    case EVENT_TYPES.GAME_START:
+      return {
+        module: pick([...MODULES]),
+        scenario: pick([...SCENARIO_NAMES]),
+        devicePlatform: pick(['ios', 'android']),
+      }
+
+    case EVENT_TYPES.GAME_COMPLETE:
+      return {
+        module: pick([...MODULES]),
+        scenario: pick([...SCENARIO_NAMES]),
+        score: randInt(40, 100),
+        duration: randInt(60, 600), // seconds
+        errors: randInt(0, 8),
+        accuracyRate: parseFloat((Math.random() * 0.4 + 0.55).toFixed(3)),
+        passed: Math.random() > 0.2,
+      }
+
+    case EVENT_TYPES.INITIAL_ASSESSMENT:
+      return {
+        overallScore: randInt(30, 85),
+        categories: {
+          phraseology: randInt(20, 100),
+          procedures: randInt(20, 100),
+          situational_awareness: randInt(20, 100),
+        },
+        recommendedModule: pick([...MODULES]),
+      }
+
+    default:
+      return null
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main seed function
+// ---------------------------------------------------------------------------
+
+async function main() {
+  console.log('--- RADStrat v1 Database Seed ---\n')
+
+  const playerHash = await hashPassword(PLAYER_PASSWORD)
+  const adminHash = await hashPassword(ADMIN_PASSWORD)
+
+  // -----------------------------------------------------------------------
+  // 1. Super Admin
+  // -----------------------------------------------------------------------
+
+  const admin = await prisma.user.upsert({
+    where: { email: 'jacintayee98@gmail.com' },
+    update: {},
+    create: {
+      email: 'jacintayee98@gmail.com',
+      firstName: 'Jacinta',
+      lastName: 'Yee',
+      passwordHash: adminHash,
+      role: 'SUPER_ADMIN',
+      isActive: true,
+      mustChangePassword: false,
+      lastLoginAt: randomRecentDate(5),
+    },
+  })
+  console.log(`  [admin]  ${admin.email} (${admin.role})`)
+
+  // -----------------------------------------------------------------------
+  // 2. Players + Progress + Events
+  // -----------------------------------------------------------------------
+
+  for (const player of PLAYERS) {
+    const email = `${player.firstName.toLowerCase().replace(/\s+/g, '.')}.${player.lastName.toLowerCase()}@demo.radstrat.mil.sg`
+    const hasLoggedIn = Math.random() > 0.25 // ~75% have logged in
+    const lastLoginAt = hasLoggedIn ? randomRecentDate(30) : null
+
+    // Upsert user
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: {
+        email,
+        firstName: player.firstName,
+        lastName: player.lastName,
+        passwordHash: playerHash,
+        role: 'PLAYER',
+        isActive: player.isActive,
+        mustChangePassword: false,
+        lastLoginAt,
+      },
+    })
+
+    // PlayerProgress (skip if already exists)
+    const existingProgress = await prisma.playerProgress.findUnique({
+      where: { userId: user.id },
+    })
+    if (!existingProgress) {
+      await prisma.playerProgress.create({
+        data: {
+          userId: user.id,
+          progressData: generateProgressData() as unknown as Prisma.InputJsonValue,
+          version: randInt(1, 12),
+          savedAt: randomRecentDate(3),
+        },
+      })
+    }
+
+    // Events (skip if user already has events)
+    const existingEventCount = await prisma.event.count({
+      where: { userId: user.id },
+    })
+    if (existingEventCount === 0) {
+      const eventCount = randInt(3, 8)
+      const eventTypes = Object.values(EVENT_TYPES)
+      const events: Prisma.EventCreateManyInput[] = []
+
+      for (let i = 0; i < eventCount; i++) {
+        const eventType = pick(eventTypes)
+        const payload = generateEventPayload(eventType)
+        events.push({
+          userId: user.id,
+          eventType,
+          payload: (payload ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+          createdAt: randomRecentDate(30),
+        })
+      }
+
+      await prisma.event.createMany({ data: events })
+    }
+
+    const status = player.isActive ? 'active' : 'inactive'
+    console.log(`  [player] ${email} (${status})`)
+  }
+
+  // -----------------------------------------------------------------------
+  // Summary
+  // -----------------------------------------------------------------------
+
+  const userCount = await prisma.user.count()
+  const progressCount = await prisma.playerProgress.count()
+  const eventCount = await prisma.event.count()
+
+  console.log('\n--- Seed Complete ---')
+  console.log(`  Users:    ${userCount}`)
+  console.log(`  Progress: ${progressCount}`)
+  console.log(`  Events:   ${eventCount}`)
+}
+
+// ---------------------------------------------------------------------------
+// Execute
+// ---------------------------------------------------------------------------
+
+main()
+  .catch((err) => {
+    console.error('Seed failed:', err)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

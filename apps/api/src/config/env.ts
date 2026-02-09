@@ -11,6 +11,10 @@ const envSchema = z.object({
   JWT_ADMIN_ACCESS_SECRET: z.string().min(32, 'JWT_ADMIN_ACCESS_SECRET must be at least 32 characters'),
   JWT_ADMIN_REFRESH_SECRET: z.string().min(32, 'JWT_ADMIN_REFRESH_SECRET must be at least 32 characters'),
 
+  // Email (Resend)
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+
   // CORS
   CORS_ORIGIN: z.string().default('*'),
 })

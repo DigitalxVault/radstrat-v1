@@ -84,11 +84,31 @@ export function useUpdateUser() {
       data,
     }: {
       id: string
-      data: { isActive?: boolean; mustChangePassword?: boolean }
+      data: {
+        firstName?: string
+        lastName?: string
+        email?: string
+        isActive?: boolean
+        mustChangePassword?: boolean
+      }
     }) =>
       api(`/api/admin/users/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
+  })
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      api(`/api/admin/users/${id}`, {
+        method: 'DELETE',
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })

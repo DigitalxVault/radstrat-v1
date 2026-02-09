@@ -2,6 +2,7 @@ import { prisma } from '@repo/database'
 import { hashPassword } from '../lib/password.js'
 import { generateTempPassword } from '../lib/crypto.js'
 import { revokeAllUserTokens } from './token.service.js'
+import { sendPasswordResetEmail } from './email.service.js'
 
 interface ImportUser {
   email: string
@@ -152,6 +153,9 @@ export async function resetPassword(userId: string) {
 
   // Revoke all sessions
   await revokeAllUserTokens(userId)
+
+  // Send password reset email (non-blocking — failure doesn't prevent reset)
+  await sendPasswordResetEmail(user.email, tempPassword, `${user.firstName} ${user.lastName}`)
 
   return {
     temporaryPassword: tempPassword,

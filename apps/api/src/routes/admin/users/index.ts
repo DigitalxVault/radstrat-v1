@@ -4,6 +4,7 @@ import { adminListUsersRoute } from './list.js'
 import { adminUserDetailRoute } from './detail.js'
 import { adminUpdateUserRoute } from './update.js'
 import { adminResetPasswordRoute } from './reset-password.js'
+import { adminDeleteUserRoute } from './delete.js'
 
 export const adminUsersRoutes: FastifyPluginAsyncZod = async (app) => {
   await app.register(adminImportRoute)
@@ -11,4 +12,5 @@ export const adminUsersRoutes: FastifyPluginAsyncZod = async (app) => {
   await app.register(adminUserDetailRoute)
   await app.register(adminUpdateUserRoute)
   await app.register(adminResetPasswordRoute)
+  await app.register(adminDeleteUserRoute)
 }

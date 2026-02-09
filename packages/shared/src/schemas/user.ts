@@ -32,6 +32,9 @@ export const userListResponseSchema = z.object({
 })
 
 export const updateUserRequestSchema = z.object({
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  email: z.email().optional(),
   isActive: z.boolean().optional(),
   mustChangePassword: z.boolean().optional(),
 })

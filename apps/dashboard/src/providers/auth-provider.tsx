@@ -22,12 +22,14 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   logout: () => Promise<void>
+  refetchUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   logout: async () => {},
+  refetchUser: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -42,6 +44,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setIsLoading(false))
   }, [])
 
+  const refetchUser = useCallback(async () => {
+    try {
+      const data = await api<User>('/api/auth/me')
+      setUser(data)
+    } catch {
+      // ignore — user may have logged out
+    }
+  }, [])
+
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
     setUser(null)
@@ -49,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router])
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, logout, refetchUser }}>
       {children}
     </AuthContext.Provider>
   )

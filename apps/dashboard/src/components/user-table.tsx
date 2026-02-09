@@ -11,6 +11,8 @@ import {
   KeyRound,
   UserX,
   UserCheck,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,8 +32,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useUsers, useUpdateUser, useResetPassword } from '@/hooks/use-users'
+import { useUsers, useUpdateUser, useResetPassword, useDeleteUser } from '@/hooks/use-users'
 import { ResetPasswordDialog } from '@/components/reset-password-dialog'
+import { EditUserDialog } from '@/components/edit-user-dialog'
+import { DeleteUserDialog } from '@/components/delete-user-dialog'
 import { ImportDialog } from '@/components/import-dialog'
 
 export function UserTable() {
@@ -45,6 +49,16 @@ export function UserTable() {
     id: string
     name: string
   } | null>(null)
+  const [editTarget, setEditTarget] = useState<{
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string
+    name: string
+  } | null>(null)
 
   const { data, isLoading } = useUsers({
     page,
@@ -55,6 +69,7 @@ export function UserTable() {
 
   const updateUser = useUpdateUser()
   const resetPassword = useResetPassword()
+  const deleteUser = useDeleteUser()
 
   const handleSearchChange = useCallback(
     (value: string) => {
@@ -66,17 +81,6 @@ export function UserTable() {
     },
     [],
   )
-
-  function handleToggleActive(id: string, currentlyActive: boolean) {
-    const action = currentlyActive ? 'deactivate' : 'activate'
-    updateUser.mutate(
-      { id, data: { isActive: !currentlyActive } },
-      {
-        onSuccess: () => toast.success(`User ${action}d successfully`),
-        onError: () => toast.error(`Failed to ${action} user`),
-      },
-    )
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -173,6 +177,19 @@ export function UserTable() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() =>
+                              setEditTarget({
+                                id: user.id,
+                                firstName: user.firstName,
+                                lastName: user.lastName,
+                                email: user.email,
+                              })
+                            }
+                          >
+                            <Pencil className="size-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
                               setResetTarget({
                                 id: user.id,
                                 name: `${user.firstName} ${user.lastName}`,
@@ -184,20 +201,14 @@ export function UserTable() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() =>
-                              handleToggleActive(user.id, user.isActive)
+                              setDeleteTarget({
+                                id: user.id,
+                                name: `${user.firstName} ${user.lastName}`,
+                              })
                             }
                           >
-                            {user.isActive ? (
-                              <>
-                                <UserX className="size-4 mr-2" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="size-4 mr-2" />
-                                Activate
-                              </>
-                            )}
+                            <Trash2 className="size-4 mr-2" />
+                            Deactivate
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -250,6 +261,22 @@ export function UserTable() {
           userName={resetTarget.name}
           open={!!resetTarget}
           onOpenChange={(open) => !open && setResetTarget(null)}
+        />
+      )}
+
+      {editTarget && (
+        <EditUserDialog
+          user={editTarget}
+          open={!!editTarget}
+          onOpenChange={(open) => !open && setEditTarget(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteUserDialog
+          user={deleteTarget}
+          open={!!deleteTarget}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
         />
       )}
     </div>

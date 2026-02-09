@@ -15,6 +15,7 @@ export {
   refreshRequestSchema,
   tokenResponseSchema,
   logoutRequestSchema,
+  adminUpdateProfileSchema,
 } from './schemas/auth.js'
 
 // User schemas
