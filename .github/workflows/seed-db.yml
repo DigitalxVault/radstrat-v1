@@ -17,7 +17,10 @@ jobs:
           script_stop: true
           script: |
             cd /home/ubuntu/radstrat
+            # Source env vars and export them for subshells
+            set -a
             . /home/ubuntu/radstrat/.env.production
+            set +a
             echo "Installing dependencies..."
             pnpm install --frozen-lockfile
             echo "Running database seed..."
