@@ -122,6 +122,7 @@ const PLAYERS: PlayerDef[] = [
 
 const PLAYER_PASSWORD = 'DemoPlayer2025!'
 const ADMIN_PASSWORD = 'admin_admin01'
+const EUGENE_ADMIN_PASSWORD = 'MAGESCR1'
 
 // ---------------------------------------------------------------------------
 // Data generators
@@ -199,12 +200,13 @@ async function main() {
 
   const playerHash = await hashPassword(PLAYER_PASSWORD)
   const adminHash = await hashPassword(ADMIN_PASSWORD)
+  const eugeneHash = await hashPassword(EUGENE_ADMIN_PASSWORD)
 
   // -----------------------------------------------------------------------
-  // 1. Super Admin
+  // 1. Super Admins
   // -----------------------------------------------------------------------
 
-  const admin = await prisma.user.upsert({
+  const jacintaAdmin = await prisma.user.upsert({
     where: { email: 'jacintayee98@gmail.com' },
     update: {},
     create: {
@@ -218,7 +220,23 @@ async function main() {
       lastLoginAt: randomRecentDate(5),
     },
   })
-  console.log(`  [admin]  ${admin.email} (${admin.role})`)
+  console.log(`  [admin]  ${jacintaAdmin.email} (${jacintaAdmin.role})`)
+
+  const eugeneAdmin = await prisma.user.upsert({
+    where: { email: 'eugene.tan@magesstudio.com.sg' },
+    update: {},
+    create: {
+      email: 'eugene.tan@magesstudio.com.sg',
+      firstName: 'Eugene',
+      lastName: 'Tan',
+      passwordHash: eugeneHash,
+      role: 'SUPER_ADMIN',
+      isActive: true,
+      mustChangePassword: false,
+      lastLoginAt: null,
+    },
+  })
+  console.log(`  [admin]  ${eugeneAdmin.email} (${eugeneAdmin.role})`)
 
   // -----------------------------------------------------------------------
   // 2. Players + Progress + Events
