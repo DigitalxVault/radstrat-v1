@@ -18,6 +18,10 @@ jobs:
           script: |
             cd /home/ubuntu/radstrat
             . /home/ubuntu/radstrat/.env.production
+            echo "Installing dependencies..."
+            pnpm install --frozen-lockfile
             echo "Running database seed..."
-            pnpm db:seed
+            pnpm --filter=@repo/database db:generate
+            cd packages/database
+            npx tsx prisma/seed.ts
             echo "Seed complete!"
