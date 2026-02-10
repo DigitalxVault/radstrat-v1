@@ -45,7 +45,7 @@ export function DailyActiveChart({ data }: DailyActiveChartProps) {
         <Tooltip
           labelFormatter={(value: string) => new Date(value).toLocaleDateString()}
           contentStyle={{
-            borderRadius: '8px',
+            borderRadius: '12px',
             border: '1px solid hsl(var(--border))',
             background: 'hsl(var(--popover))',
           }}

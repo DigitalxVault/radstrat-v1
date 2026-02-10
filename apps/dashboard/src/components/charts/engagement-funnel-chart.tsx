@@ -40,7 +40,7 @@ export function EngagementFunnelChart({ data }: EngagementFunnelChartProps) {
         <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
         <Tooltip
           contentStyle={{
-            borderRadius: '8px',
+            borderRadius: '12px',
             border: '1px solid hsl(var(--border))',
             background: 'hsl(var(--popover))',
           }}

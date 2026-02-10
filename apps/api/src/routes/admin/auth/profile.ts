@@ -11,12 +11,13 @@ export const adminProfileRoute: FastifyPluginAsyncZod = async (app) => {
     schema: {
       tags: ['Admin'],
       summary: 'Update admin profile',
-      description: 'Update the authenticated admin user\'s first name and/or last name.',
+      description: 'Update the authenticated admin user\'s name and/or email.',
       security: [{ adminBearerAuth: [] }],
       body: adminUpdateProfileSchema,
       response: {
         200: userProfileSchema,
         404: z.object({ error: z.string(), message: z.string() }),
+        409: z.object({ error: z.string(), message: z.string() }),
       },
     },
     preHandler: [adminAuth],
@@ -30,6 +31,21 @@ export const adminProfileRoute: FastifyPluginAsyncZod = async (app) => {
           error: 'NotFound',
           message: 'User not found',
         })
+      }
+
+      // Email uniqueness check
+      if (updates.email) {
+        const normalizedEmail = updates.email.toLowerCase()
+        if (normalizedEmail !== existing.email) {
+          const taken = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+          if (taken) {
+            return reply.code(409).send({
+              error: 'Conflict',
+              message: 'Email is already in use',
+            })
+          }
+          updates.email = normalizedEmail
+        }
       }
 
       const user = await prisma.user.update({

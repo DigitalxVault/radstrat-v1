@@ -5,12 +5,10 @@ import { idParamSchema, userResponseSchema } from '@repo/shared'
 import { adminAuth } from '../../../middleware/admin-auth.js'
 
 const userDetailResponseSchema = userResponseSchema.extend({
-  progress: z
-    .object({
-      version: z.number(),
-      savedAt: z.string(),
-    })
-    .nullable(),
+  progressSummary: z.object({
+    hasProgress: z.boolean(),
+    lastSavedAt: z.string().nullable(),
+  }),
   deviceCount: z.number(),
   eventCount: z.number(),
 })
@@ -59,12 +57,10 @@ export const adminUserDetailRoute: FastifyPluginAsyncZod = async (app) => {
         mustChangePassword: user.mustChangePassword,
         lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
         createdAt: user.createdAt.toISOString(),
-        progress: user.playerProgress
-          ? {
-              version: user.playerProgress.version,
-              savedAt: user.playerProgress.savedAt.toISOString(),
-            }
-          : null,
+        progressSummary: {
+          hasProgress: !!user.playerProgress,
+          lastSavedAt: user.playerProgress?.savedAt.toISOString() ?? null,
+        },
         deviceCount: user._count.devices,
         eventCount: user._count.events,
       }

@@ -37,6 +37,7 @@ import { ResetPasswordDialog } from '@/components/reset-password-dialog'
 import { EditUserDialog } from '@/components/edit-user-dialog'
 import { DeleteUserDialog } from '@/components/delete-user-dialog'
 import { ImportDialog } from '@/components/import-dialog'
+import { AddUserDialog } from '@/components/add-user-dialog'
 
 export function UserTable() {
   const router = useRouter()
@@ -45,6 +46,7 @@ export function UserTable() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState<string>('')
   const [importOpen, setImportOpen] = useState(false)
+  const [addUserOpen, setAddUserOpen] = useState(false)
   const [resetTarget, setResetTarget] = useState<{
     id: string
     name: string
@@ -107,6 +109,10 @@ export function UserTable() {
             <option value="true">Active</option>
             <option value="false">Inactive</option>
           </select>
+          <Button onClick={() => setAddUserOpen(true)} size="sm" variant="outline">
+            <UserPlus className="size-4 mr-1" />
+            Add User
+          </Button>
           <Button onClick={() => setImportOpen(true)} size="sm">
             <UserPlus className="size-4 mr-1" />
             Import
@@ -122,6 +128,8 @@ export function UserTable() {
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Initial RT</TableHead>
+              <TableHead>Current RT</TableHead>
               <TableHead>Last Login</TableHead>
               <TableHead className="w-10" />
             </TableRow>
@@ -134,6 +142,8 @@ export function UserTable() {
                     <TableCell><Skeleton className="h-4 w-36" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell />
                   </TableRow>
@@ -155,6 +165,12 @@ export function UserTable() {
                       <Badge variant={user.isActive ? 'default' : 'destructive'}>
                         {user.isActive ? 'Active' : 'Inactive'}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm tabular-nums">
+                      {user.initialRt != null ? user.initialRt : '—'}
+                    </TableCell>
+                    <TableCell className="text-sm tabular-nums">
+                      {user.currentRt != null ? user.currentRt : '—'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {user.lastLoginAt
@@ -217,7 +233,7 @@ export function UserTable() {
                 ))}
             {!isLoading && data?.users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
@@ -253,6 +269,7 @@ export function UserTable() {
         </div>
       )}
 
+      <AddUserDialog open={addUserOpen} onOpenChange={setAddUserOpen} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
       {resetTarget && (

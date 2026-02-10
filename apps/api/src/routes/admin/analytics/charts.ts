@@ -32,15 +32,15 @@ export const adminChartsRoute: FastifyPluginAsyncZod = async (app) => {
       ] = await Promise.all([
         // 1. Daily active users — last 7 days
         prisma.$queryRaw<{ date: string; count: number }[]>(
-          Prisma.sql`SELECT DATE(created_at)::text as date, COUNT(DISTINCT user_id)::int as count
-            FROM events WHERE created_at >= NOW() - INTERVAL '7 days'
-            GROUP BY DATE(created_at) ORDER BY date ASC`,
+          Prisma.sql`SELECT DATE("createdAt")::text as date, COUNT(DISTINCT "userId")::int as count
+            FROM events WHERE "createdAt" >= NOW() - INTERVAL '7 days'
+            GROUP BY DATE("createdAt") ORDER BY date ASC`,
         ),
 
         // 2a. Completion rate — completed count
         prisma.$queryRaw<{ count: number }[]>(
-          Prisma.sql`SELECT COUNT(DISTINCT user_id)::int as count
-            FROM events WHERE event_type = ${EVENT_TYPES.GAME_COMPLETE}`,
+          Prisma.sql`SELECT COUNT(DISTINCT "userId")::int as count
+            FROM events WHERE "eventType" = ${EVENT_TYPES.GAME_COMPLETE}`,
         ),
 
         // 2b. Completion rate — total players
@@ -52,50 +52,50 @@ export const adminChartsRoute: FastifyPluginAsyncZod = async (app) => {
             COUNT(*) FILTER (WHERE completions = 1)::int as once,
             COUNT(*) FILTER (WHERE completions > 1)::int as multiple
           FROM (
-            SELECT user_id, COUNT(*)::int as completions
-            FROM events WHERE event_type = ${EVENT_TYPES.GAME_COMPLETE}
-            GROUP BY user_id
+            SELECT "userId", COUNT(*)::int as completions
+            FROM events WHERE "eventType" = ${EVENT_TYPES.GAME_COMPLETE}
+            GROUP BY "userId"
           ) player_completions`,
         ),
 
         // 4a. Engagement funnel — started (any event)
         prisma.$queryRaw<{ count: number }[]>(
-          Prisma.sql`SELECT COUNT(DISTINCT user_id)::int as count FROM events`,
+          Prisma.sql`SELECT COUNT(DISTINCT "userId")::int as count FROM events`,
         ),
 
         // 4b. Engagement funnel — completed
         prisma.$queryRaw<{ count: number }[]>(
-          Prisma.sql`SELECT COUNT(DISTINCT user_id)::int as count
-            FROM events WHERE event_type = ${EVENT_TYPES.GAME_COMPLETE}`,
+          Prisma.sql`SELECT COUNT(DISTINCT "userId")::int as count
+            FROM events WHERE "eventType" = ${EVENT_TYPES.GAME_COMPLETE}`,
         ),
 
         // 5a. Score comparison — initial assessment average
         prisma.$queryRaw<{ avg: number }[]>(
-          Prisma.sql`SELECT COALESCE(AVG((payload->>'score')::numeric), 0)::float as avg
+          Prisma.sql`SELECT COALESCE(AVG((payload->>'overallScore')::numeric), 0)::float as avg
             FROM events
-            WHERE event_type = ${EVENT_TYPES.INITIAL_ASSESSMENT}
-            AND payload->>'score' IS NOT NULL`,
+            WHERE "eventType" = ${EVENT_TYPES.INITIAL_ASSESSMENT}
+            AND payload->>'overallScore' IS NOT NULL`,
         ),
 
         // 5b. Score comparison — latest game_complete average
         prisma.$queryRaw<{ avg: number }[]>(
           Prisma.sql`SELECT COALESCE(AVG(score), 0)::float as avg
           FROM (
-            SELECT DISTINCT ON (user_id) (payload->>'score')::numeric as score
+            SELECT DISTINCT ON ("userId") (payload->>'score')::numeric as score
             FROM events
-            WHERE event_type = ${EVENT_TYPES.GAME_COMPLETE}
+            WHERE "eventType" = ${EVENT_TYPES.GAME_COMPLETE}
             AND payload->>'score' IS NOT NULL
-            ORDER BY user_id, created_at DESC
+            ORDER BY "userId", "createdAt" DESC
           ) latest`,
         ),
 
         // 5c. Score comparison — players with both assessment and completion
         prisma.$queryRaw<{ count: number }[]>(
-          Prisma.sql`SELECT COUNT(DISTINCT e1.user_id)::int as count
+          Prisma.sql`SELECT COUNT(DISTINCT e1."userId")::int as count
           FROM events e1
-          INNER JOIN events e2 ON e1.user_id = e2.user_id
-          WHERE e1.event_type = ${EVENT_TYPES.INITIAL_ASSESSMENT}
-          AND e2.event_type = ${EVENT_TYPES.GAME_COMPLETE}`,
+          INNER JOIN events e2 ON e1."userId" = e2."userId"
+          WHERE e1."eventType" = ${EVENT_TYPES.INITIAL_ASSESSMENT}
+          AND e2."eventType" = ${EVENT_TYPES.GAME_COMPLETE}`,
         ),
       ])
 

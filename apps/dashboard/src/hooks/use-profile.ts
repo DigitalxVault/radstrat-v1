@@ -6,6 +6,7 @@ import { api } from '@/lib/api-client'
 interface UpdateProfileData {
   firstName?: string
   lastName?: string
+  email?: string
 }
 
 export function useUpdateProfile() {

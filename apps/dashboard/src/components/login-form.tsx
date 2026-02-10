@@ -72,7 +72,7 @@ export function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
             disabled={isLoading}
-            className="border-white/50 bg-white/40 text-gray-800 placeholder:text-gray-400 focus-visible:ring-[#586888]"
+            className="border-white/50 bg-white/40 text-gray-800 placeholder:text-gray-400 focus-visible:ring-[#B8A5E5]"
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -84,12 +84,12 @@ export function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             disabled={isLoading}
-            className="border-white/50 bg-white/40 text-gray-800 placeholder:text-gray-400 focus-visible:ring-[#586888]"
+            className="border-white/50 bg-white/40 text-gray-800 placeholder:text-gray-400 focus-visible:ring-[#B8A5E5]"
           />
         </div>
         <Button
           type="submit"
-          className="mt-2 w-full bg-[#586888] text-white hover:bg-[#485868]"
+          className="mt-2 w-full bg-[#B8A5E5] text-white hover:bg-[#A595D5]"
           disabled={isLoading}
         >
           {isLoading ? 'Signing in...' : 'Sign In'}

@@ -14,6 +14,8 @@ interface User {
   lastLoginAt: string | null
   createdAt: string
   updatedAt: string
+  initialRt: number | null
+  currentRt: number | null
 }
 
 interface UserDetail extends User {

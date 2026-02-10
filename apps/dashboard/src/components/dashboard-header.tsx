@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { LogOut, Menu } from 'lucide-react'
 import { useAuth } from '@/providers/auth-provider'
 import { Button } from '@/components/ui/button'
@@ -21,9 +22,12 @@ export function DashboardHeader() {
         {isLoading ? (
           <Skeleton className="h-4 w-24" />
         ) : user ? (
-          <span className="text-sm text-muted-foreground">
+          <Link
+            href="/settings"
+            className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors"
+          >
             {user.firstName} {user.lastName}
-          </span>
+          </Link>
         ) : null}
         <Button
           variant="ghost"

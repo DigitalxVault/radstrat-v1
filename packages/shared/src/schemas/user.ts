@@ -10,6 +10,8 @@ export const userResponseSchema = z.object({
   mustChangePassword: z.boolean(),
   lastLoginAt: z.string().nullable(),
   createdAt: z.string(),
+  initialRt: z.number().nullable().optional(),
+  currentRt: z.number().nullable().optional(),
 })
 
 export const userListQuerySchema = z.object({

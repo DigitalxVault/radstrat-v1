@@ -13,7 +13,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <SidebarNav />
       <SidebarInset>
         <DashboardHeader />
-        <main className="flex-1 p-6 bg-gradient-to-br from-slate-100 via-blue-50/40 to-slate-100">{children}</main>
+        <main className="flex-1 p-6 bg-gradient-to-br from-[#EEF5F3] via-[#F0F0F5] to-[#F3EEF8]">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

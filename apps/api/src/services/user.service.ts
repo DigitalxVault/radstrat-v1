@@ -1,4 +1,4 @@
-import { prisma } from '@repo/database'
+import { prisma, Prisma } from '@repo/database'
 import { hashPassword } from '../lib/password.js'
 import { generateTempPassword } from '../lib/crypto.js'
 import { revokeAllUserTokens } from './token.service.js'
@@ -121,11 +121,33 @@ export async function listUsers(params: ListUsersParams) {
     prisma.user.count({ where }),
   ])
 
+  // Fetch per-user scores (initial assessment + latest game_complete)
+  const userIds = users.map((u) => u.id)
+  const scores =
+    userIds.length > 0
+      ? await prisma.$queryRaw<{ userId: string; initialRt: string | null; currentRt: string | null }[]>(
+          Prisma.sql`
+            SELECT u.id AS "userId",
+              (SELECT e.payload->>'overallScore' FROM events e
+               WHERE e."userId" = u.id AND e."eventType" = 'initial_assessment'
+               ORDER BY e."createdAt" ASC LIMIT 1) AS "initialRt",
+              (SELECT e.payload->>'score' FROM events e
+               WHERE e."userId" = u.id AND e."eventType" = 'game_complete'
+               ORDER BY e."createdAt" DESC LIMIT 1) AS "currentRt"
+            FROM users u WHERE u.id IN (${Prisma.join(userIds)})
+          `,
+        )
+      : []
+
+  const scoreMap = new Map(scores.map((s) => [s.userId, s]))
+
   return {
     users: users.map((u) => ({
       ...u,
       lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
       createdAt: u.createdAt.toISOString(),
+      initialRt: scoreMap.get(u.id)?.initialRt ? Number(scoreMap.get(u.id)!.initialRt) : null,
+      currentRt: scoreMap.get(u.id)?.currentRt ? Number(scoreMap.get(u.id)!.currentRt) : null,
     })),
     total,
     page,

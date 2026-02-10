@@ -2,7 +2,7 @@
  * RADStrat v1 — Database Seed Script
  *
  * Creates demo players, progress records, events, and a Super Admin.
- * Idempotent: uses upsert by email so re-running is safe.
+ * Re-runnable: deletes stale events/progress and regenerates with fresh timestamps.
  *
  * Run from monorepo root:
  *   pnpm db:seed
@@ -65,6 +65,40 @@ function pick<T>(arr: T[]): T {
   return arr[randInt(0, arr.length - 1)]
 }
 
+/** Generate a secure random password (8-12 chars, upper+lower+digit+symbol) */
+function generatePassword(): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ' // no I/O to avoid confusion
+  const lower = 'abcdefghjkmnpqrstuvwxyz' // no i/l/o
+  const digits = '23456789' // no 0/1
+  const symbols = '!@#$%&*'
+  const all = upper + lower + digits + symbols
+
+  const length = randInt(8, 12)
+
+  // Guarantee at least one of each category
+  const required = [
+    upper[randInt(0, upper.length - 1)],
+    lower[randInt(0, lower.length - 1)],
+    digits[randInt(0, digits.length - 1)],
+    symbols[randInt(0, symbols.length - 1)],
+  ]
+
+  // Fill remaining with random from all
+  const remaining: string[] = []
+  for (let i = required.length; i < length; i++) {
+    remaining.push(all[randInt(0, all.length - 1)])
+  }
+
+  // Shuffle all characters
+  const chars = [...required, ...remaining]
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randInt(0, i)
+    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+  }
+
+  return chars.join('')
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -120,7 +154,6 @@ const PLAYERS: PlayerDef[] = [
   { firstName: 'Jia Hui', lastName: 'Lee', isActive: false },
 ]
 
-const PLAYER_PASSWORD = 'DemoPlayer2025!'
 const ADMIN_PASSWORD = 'admin_admin01'
 const EUGENE_ADMIN_PASSWORD = 'MAGESCR1'
 
@@ -149,7 +182,7 @@ function generateProgressData(): Record<string, unknown> {
     accuracyRate: parseFloat((Math.random() * 0.35 + 0.60).toFixed(3)), // 0.600 – 0.950
     streak: randInt(0, 14),
     rank: pick(['Recruit', 'Trainee', 'Cadet', 'Specialist', 'Expert']),
-    lastSessionAt: randomRecentDate(7).toISOString(),
+    lastSessionAt: randomRecentDate(3).toISOString(),
   }
 }
 
@@ -198,7 +231,6 @@ function generateEventPayload(
 async function main() {
   console.log('--- RADStrat v1 Database Seed ---\n')
 
-  const playerHash = await hashPassword(PLAYER_PASSWORD)
   const adminHash = await hashPassword(ADMIN_PASSWORD)
   const eugeneHash = await hashPassword(EUGENE_ADMIN_PASSWORD)
 
@@ -239,23 +271,28 @@ async function main() {
   console.log(`  [admin]  ${eugeneAdmin.email} (${eugeneAdmin.role})`)
 
   // -----------------------------------------------------------------------
-  // 2. Players + Progress + Events
+  // 2. Players + Progress + Events (with unique passwords & fresh data)
   // -----------------------------------------------------------------------
+
+  // Collect credentials for console output
+  const credentials: Array<{ email: string; name: string; password: string }> = []
 
   for (const player of PLAYERS) {
     const email = `${player.firstName.toLowerCase().replace(/\s+/g, '.')}.${player.lastName.toLowerCase()}@demo.radstrat.mil.sg`
+    const password = generatePassword()
+    const passwordHash = await hashPassword(password)
     const hasLoggedIn = Math.random() > 0.25 // ~75% have logged in
-    const lastLoginAt = hasLoggedIn ? randomRecentDate(30) : null
+    const lastLoginAt = hasLoggedIn ? randomRecentDate(5) : null
 
-    // Upsert user
+    // Upsert user — update password hash on re-run
     const user = await prisma.user.upsert({
       where: { email },
-      update: {},
+      update: { passwordHash, lastLoginAt },
       create: {
         email,
         firstName: player.firstName,
         lastName: player.lastName,
-        passwordHash: playerHash,
+        passwordHash,
         role: 'PLAYER',
         isActive: player.isActive,
         mustChangePassword: false,
@@ -263,46 +300,83 @@ async function main() {
       },
     })
 
-    // PlayerProgress (skip if already exists)
-    const existingProgress = await prisma.playerProgress.findUnique({
-      where: { userId: user.id },
+    credentials.push({
+      email,
+      name: `${player.firstName} ${player.lastName}`,
+      password,
     })
-    if (!existingProgress) {
-      await prisma.playerProgress.create({
-        data: {
-          userId: user.id,
-          progressData: generateProgressData() as unknown as Prisma.InputJsonValue,
-          version: randInt(1, 12),
-          savedAt: randomRecentDate(3),
-        },
+
+    // Delete old progress and events, then recreate with fresh timestamps
+    await prisma.event.deleteMany({ where: { userId: user.id } })
+    await prisma.playerProgress.deleteMany({ where: { userId: user.id } })
+
+    // Fresh progress
+    await prisma.playerProgress.create({
+      data: {
+        userId: user.id,
+        progressData: generateProgressData() as unknown as Prisma.InputJsonValue,
+        version: randInt(1, 12),
+        savedAt: randomRecentDate(2),
+      },
+    })
+
+    // Fresh events — guarantee at least 1 initial_assessment + 1 game_complete
+    const events: Prisma.EventCreateManyInput[] = []
+
+    // 1) Guaranteed initial_assessment (oldest — player's first login)
+    events.push({
+      userId: user.id,
+      eventType: EVENT_TYPES.INITIAL_ASSESSMENT,
+      payload: generateEventPayload(EVENT_TYPES.INITIAL_ASSESSMENT) as Prisma.InputJsonValue,
+      createdAt: randomRecentDate(5), // within 7-day chart window
+    })
+
+    // 2) Guaranteed game_start + game_complete pair
+    const startTime = randomRecentDate(4)
+    events.push({
+      userId: user.id,
+      eventType: EVENT_TYPES.GAME_START,
+      payload: generateEventPayload(EVENT_TYPES.GAME_START) as Prisma.InputJsonValue,
+      createdAt: startTime,
+    })
+    events.push({
+      userId: user.id,
+      eventType: EVENT_TYPES.GAME_COMPLETE,
+      payload: generateEventPayload(EVENT_TYPES.GAME_COMPLETE) as Prisma.InputJsonValue,
+      createdAt: new Date(startTime.getTime() + randInt(60, 600) * 1000),
+    })
+
+    // 3) Additional random events (3-6 more)
+    const extraCount = randInt(3, 6)
+    const eventTypes = Object.values(EVENT_TYPES)
+    for (let i = 0; i < extraCount; i++) {
+      const eventType = pick(eventTypes)
+      const payload = generateEventPayload(eventType)
+      events.push({
+        userId: user.id,
+        eventType,
+        payload: (payload ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        createdAt: randomRecentDate(5),
       })
     }
 
-    // Events (skip if user already has events)
-    const existingEventCount = await prisma.event.count({
-      where: { userId: user.id },
-    })
-    if (existingEventCount === 0) {
-      const eventCount = randInt(3, 8)
-      const eventTypes = Object.values(EVENT_TYPES)
-      const events: Prisma.EventCreateManyInput[] = []
-
-      for (let i = 0; i < eventCount; i++) {
-        const eventType = pick(eventTypes)
-        const payload = generateEventPayload(eventType)
-        events.push({
-          userId: user.id,
-          eventType,
-          payload: (payload ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-          createdAt: randomRecentDate(30),
-        })
-      }
-
-      await prisma.event.createMany({ data: events })
-    }
+    await prisma.event.createMany({ data: events })
 
     const status = player.isActive ? 'active' : 'inactive'
     console.log(`  [player] ${email} (${status})`)
+  }
+
+  // -----------------------------------------------------------------------
+  // 3. Print credentials table
+  // -----------------------------------------------------------------------
+
+  console.log('\n--- Player Credentials ---\n')
+  console.log('  Email                                              | Name            | Password')
+  console.log('  ---------------------------------------------------|-----------------|----------')
+  for (const c of credentials) {
+    const emailPad = c.email.padEnd(51)
+    const namePad = c.name.padEnd(15)
+    console.log(`  ${emailPad} | ${namePad} | ${c.password}`)
   }
 
   // -----------------------------------------------------------------------

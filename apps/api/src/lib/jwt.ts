@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose'
 
-const ACCESS_TOKEN_EXPIRY = '15m'
+const ACCESS_TOKEN_EXPIRY = '1h'
 const REFRESH_TOKEN_EXPIRY = '7d'
 
 interface TokenPayload {
