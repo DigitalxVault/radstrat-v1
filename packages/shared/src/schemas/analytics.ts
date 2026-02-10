@@ -20,4 +20,14 @@ export const chartsResponseSchema = z.object({
     currentAvg: z.number(),
     playerCount: z.number(),
   }),
+  scoreTrend: z.array(z.object({ date: z.string(), avgScore: z.number() })),
+  improvementDistribution: z.array(z.object({ bucket: z.string(), count: z.number() })),
+  topImprovers: z.array(z.object({
+    userId: z.string(),
+    firstName: z.string(),
+    lastName: z.string(),
+    initialScore: z.number(),
+    currentScore: z.number(),
+    improvement: z.number(),
+  })),
 })

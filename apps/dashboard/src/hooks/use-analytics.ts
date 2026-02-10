@@ -39,6 +39,16 @@ interface ChartsData {
   repeatPlayers: { once: number; multiple: number }
   engagementFunnel: Array<{ stage: string; count: number }>
   scoreComparison: { initialAvg: number; currentAvg: number; playerCount: number }
+  scoreTrend: Array<{ date: string; avgScore: number }>
+  improvementDistribution: Array<{ bucket: string; count: number }>
+  topImprovers: Array<{
+    userId: string
+    firstName: string
+    lastName: string
+    initialScore: number
+    currentScore: number
+    improvement: number
+  }>
 }
 
 export function useOverview() {

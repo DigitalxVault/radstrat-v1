@@ -29,6 +29,9 @@ export const adminChartsRoute: FastifyPluginAsyncZod = async (app) => {
         initialAvgResult,
         currentAvgResult,
         playerCountResult,
+        scoreTrendRows,
+        improvementDistRows,
+        topImproversRows,
       ] = await Promise.all([
         // 1. Daily active users — last 7 days
         prisma.$queryRaw<{ date: string; count: number }[]>(
@@ -97,6 +100,82 @@ export const adminChartsRoute: FastifyPluginAsyncZod = async (app) => {
           WHERE e1."eventType" = ${EVENT_TYPES.INITIAL_ASSESSMENT}
           AND e2."eventType" = ${EVENT_TYPES.GAME_COMPLETE}`,
         ),
+
+        // 6a. Score trend — daily avg game_complete score (7 days)
+        prisma.$queryRaw<{ date: string; avgScore: number }[]>(
+          Prisma.sql`SELECT DATE("createdAt")::text AS date,
+            ROUND(AVG((payload->>'score')::numeric), 1)::float AS "avgScore"
+            FROM events
+            WHERE "eventType" = ${EVENT_TYPES.GAME_COMPLETE}
+            AND payload->>'score' IS NOT NULL
+            AND "createdAt" >= NOW() - INTERVAL '7 days'
+            GROUP BY DATE("createdAt")
+            ORDER BY date ASC`,
+        ),
+
+        // 6b. Improvement distribution — buckets of (currentRT - initialRT)
+        prisma.$queryRaw<{ bucket: string; count: number }[]>(
+          Prisma.sql`SELECT
+            CASE
+              WHEN improvement < 0 THEN 'Declined'
+              WHEN improvement < 10 THEN '0–9'
+              WHEN improvement < 20 THEN '10–19'
+              WHEN improvement < 30 THEN '20–29'
+              ELSE '30+'
+            END AS bucket,
+            COUNT(*)::int AS count
+          FROM (
+            SELECT ia."userId", gc.score - ia."overallScore" AS improvement
+            FROM (
+              SELECT DISTINCT ON ("userId") "userId",
+                (payload->>'overallScore')::numeric AS "overallScore"
+              FROM events WHERE "eventType" = ${EVENT_TYPES.INITIAL_ASSESSMENT}
+                AND payload->>'overallScore' IS NOT NULL
+              ORDER BY "userId", "createdAt" ASC
+            ) ia
+            INNER JOIN (
+              SELECT DISTINCT ON ("userId") "userId",
+                (payload->>'score')::numeric AS score
+              FROM events WHERE "eventType" = ${EVENT_TYPES.GAME_COMPLETE}
+                AND payload->>'score' IS NOT NULL
+              ORDER BY "userId", "createdAt" DESC
+            ) gc ON ia."userId" = gc."userId"
+          ) improvements
+          GROUP BY 1`,
+        ),
+
+        // 6c. Top 5 improvers — biggest score gains
+        prisma.$queryRaw<{
+          userId: string
+          firstName: string
+          lastName: string
+          initialScore: number
+          currentScore: number
+          improvement: number
+        }[]>(
+          Prisma.sql`SELECT u.id AS "userId", u."firstName", u."lastName",
+            ia."overallScore"::float AS "initialScore",
+            gc.score::float AS "currentScore",
+            (gc.score - ia."overallScore")::float AS improvement
+          FROM (
+            SELECT DISTINCT ON ("userId") "userId",
+              (payload->>'overallScore')::numeric AS "overallScore"
+            FROM events WHERE "eventType" = ${EVENT_TYPES.INITIAL_ASSESSMENT}
+              AND payload->>'overallScore' IS NOT NULL
+            ORDER BY "userId", "createdAt" ASC
+          ) ia
+          INNER JOIN (
+            SELECT DISTINCT ON ("userId") "userId",
+              (payload->>'score')::numeric AS score
+            FROM events WHERE "eventType" = ${EVENT_TYPES.GAME_COMPLETE}
+              AND payload->>'score' IS NOT NULL
+            ORDER BY "userId", "createdAt" DESC
+          ) gc ON ia."userId" = gc."userId"
+          INNER JOIN users u ON u.id = ia."userId"
+          WHERE u."isActive" = true
+          ORDER BY improvement DESC
+          LIMIT 5`,
+        ),
       ])
 
       // 1. Fill missing days with 0 for daily active users
@@ -137,12 +216,40 @@ export const adminChartsRoute: FastifyPluginAsyncZod = async (app) => {
         playerCount: playerCountResult[0]?.count ?? 0,
       }
 
+      // 6a. Score trend — fill missing days with 0
+      const trendMap = new Map(scoreTrendRows.map((r) => [r.date, r.avgScore]))
+      const scoreTrend: { date: string; avgScore: number }[] = []
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+        const dateStr = d.toISOString().slice(0, 10)
+        scoreTrend.push({ date: dateStr, avgScore: trendMap.get(dateStr) ?? 0 })
+      }
+
+      // 6b. Improvement distribution — ensure all buckets present
+      const bucketOrder = ['Declined', '0–9', '10–19', '20–29', '30+']
+      const distMap = new Map(improvementDistRows.map((r) => [r.bucket, r.count]))
+      const improvementDistribution = bucketOrder.map((bucket) => ({
+        bucket,
+        count: distMap.get(bucket) ?? 0,
+      }))
+
+      // 6c. Top improvers — round scores
+      const topImprovers = topImproversRows.map((r) => ({
+        ...r,
+        initialScore: Math.round(r.initialScore * 10) / 10,
+        currentScore: Math.round(r.currentScore * 10) / 10,
+        improvement: Math.round(r.improvement * 10) / 10,
+      }))
+
       return {
         dailyActiveUsers,
         completionRate,
         repeatPlayers,
         engagementFunnel,
         scoreComparison,
+        scoreTrend,
+        improvementDistribution,
+        topImprovers,
       }
     },
   })

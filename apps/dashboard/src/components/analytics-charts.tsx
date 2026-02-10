@@ -14,6 +14,9 @@ import { CompletionRateChart } from '@/components/charts/completion-rate-chart'
 import { EngagementFunnelChart } from '@/components/charts/engagement-funnel-chart'
 import { ScoreComparisonChart } from '@/components/charts/score-comparison-chart'
 import { RepeatPlayersChart } from '@/components/charts/repeat-players-chart'
+import { ScoreTrendChart } from '@/components/charts/score-trend-chart'
+import { ImprovementDistributionChart } from '@/components/charts/improvement-distribution-chart'
+import { TopImproversList } from '@/components/charts/top-improvers-list'
 
 function ChartSkeleton() {
   return (
@@ -97,6 +100,51 @@ export function AnalyticsCharts() {
               <ChartSkeleton />
             ) : data ? (
               <RepeatPlayersChart data={data.repeatPlayers} />
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      <h2 className="text-lg font-semibold">Player Improvement</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card className="glass-card lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Score Trend</CardTitle>
+            <CardDescription>Average game score over the last 7 days</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <ChartSkeleton />
+            ) : data ? (
+              <ScoreTrendChart data={data.scoreTrend} />
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle>Top Improvers</CardTitle>
+            <CardDescription>Biggest score gains (initial vs current)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <ChartSkeleton />
+            ) : data ? (
+              <TopImproversList data={data.topImprovers} />
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Improvement Distribution</CardTitle>
+            <CardDescription>Score improvement spread across all players</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <ChartSkeleton />
+            ) : data ? (
+              <ImprovementDistributionChart data={data.improvementDistribution} />
             ) : null}
           </CardContent>
         </Card>
