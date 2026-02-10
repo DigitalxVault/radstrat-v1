@@ -28,6 +28,207 @@ Authorization: Bearer {accessToken}
 
 ---
 
+## C# Data Models — Copy This Entire Block
+
+Place these in a single file (e.g., `ApiModels.cs`) in your Unity project. All field names **must** match the JSON keys exactly.
+
+```csharp
+using System;
+
+// ============================================================
+//  AUTH MODELS
+// ============================================================
+
+[Serializable]
+public class LoginRequest
+{
+    public string email;
+    public string password;
+}
+
+[Serializable]
+public class UserProfile
+{
+    public string id;
+    public string email;
+    public string firstName;
+    public string lastName;
+    public string role;
+}
+
+[Serializable]
+public class LoginResponse
+{
+    public string accessToken;
+    public string refreshToken;
+    public bool mustChangePassword;
+    public UserProfile user;
+}
+
+[Serializable]
+public class ChangePasswordRequest
+{
+    public string currentPassword;
+    public string newPassword;
+}
+
+[Serializable]
+public class RefreshRequest
+{
+    public string refreshToken;
+}
+
+[Serializable]
+public class TokenResponse
+{
+    public string accessToken;
+    public string refreshToken;
+}
+
+[Serializable]
+public class LogoutRequest
+{
+    public string refreshToken;
+}
+
+[Serializable]
+public class MessageResponse
+{
+    public string message;
+}
+
+// ============================================================
+//  PROGRESS MODELS
+// ============================================================
+
+[Serializable]
+public class SaveProgressRequest
+{
+    public string progressData;  // JSON string — serialize your game state to string first
+    public int version;
+}
+
+// Note: For GET /progress and PUT /progress responses, progressData is arbitrary JSON.
+// Use JsonUtility for the wrapper and a JSON library (e.g., Newtonsoft) for progressData.
+[Serializable]
+public class ProgressResponse
+{
+    public string id;
+    public string progressData;  // Raw JSON string — deserialize to your game state class
+    public int version;
+    public string savedAt;
+}
+
+[Serializable]
+public class EmptyProgressResponse
+{
+    public string progressData;  // Will be "null"
+    public int version;          // Will be 0
+    public string message;
+}
+
+[Serializable]
+public class ConflictResponse
+{
+    public string error;
+    public string message;
+    public int currentVersion;
+}
+
+// ============================================================
+//  EVENT MODELS
+// ============================================================
+
+[Serializable]
+public class GameEvent
+{
+    public string eventType;
+    public string payload;  // JSON string — serialize your payload object first
+}
+
+[Serializable]
+public class SubmitEventsRequest
+{
+    public GameEvent[] events;
+}
+
+[Serializable]
+public class SubmitEventsResponse
+{
+    public int submitted;
+}
+
+// Event payload models (serialize these to JSON string for GameEvent.payload)
+
+[Serializable]
+public class InitialAssessmentPayload
+{
+    public float overallScore;  // REQUIRED for analytics
+}
+
+[Serializable]
+public class GameStartPayload
+{
+    public string moduleId;     // Optional
+    public string difficulty;   // Optional
+}
+
+[Serializable]
+public class GameCompletePayload
+{
+    public float score;           // REQUIRED for analytics
+    public int completionTime;    // Optional — seconds
+    public int attemptsCount;     // Optional
+    public string difficulty;     // Optional
+    public string moduleId;       // Optional
+}
+
+// ============================================================
+//  DEVICE MODELS
+// ============================================================
+
+[Serializable]
+public class RegisterDeviceRequest
+{
+    public string platform;          // "ios" or "android"
+    public string onesignalPlayerId; // Optional
+    public string deviceToken;       // Optional
+}
+
+[Serializable]
+public class DeviceResponse
+{
+    public string id;
+    public string platform;
+    public string onesignalPlayerId;
+    public bool isActive;
+    public string registeredAt;
+}
+
+[Serializable]
+public class UnregisterDeviceRequest
+{
+    public string deviceId;
+}
+
+// ============================================================
+//  ERROR MODEL
+// ============================================================
+
+[Serializable]
+public class ApiError
+{
+    public string error;
+    public string message;
+}
+```
+
+> **Note on `progressData`**: Unity's `JsonUtility` cannot deserialize arbitrary/dynamic JSON. For the progress `progressData` field, you have two options:
+> 1. **Recommended**: Use [Newtonsoft.Json for Unity](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.0/manual/index.html) (`JsonConvert.SerializeObject` / `DeserializeObject`)
+> 2. Define a `[Serializable]` class for your specific game state and serialize/deserialize it separately
+
+---
+
 ## 1. Authentication
 
 ### POST /auth/login
@@ -37,7 +238,7 @@ Authorization: Bearer {accessToken}
 **Auth**: None
 **Rate Limit**: 5 requests per 15 minutes
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "email": "wei.ming.tan@demo.radstrat.mil.sg",
@@ -82,6 +283,43 @@ Authorization: Bearer {accessToken}
 { "error": "Unauthorized", "message": "Account is disabled" }
 ```
 
+**C# Example:**
+```csharp
+IEnumerator Login(string email, string password)
+{
+    LoginRequest body = new LoginRequest { email = email, password = password };
+    string json = JsonUtility.ToJson(body);
+
+    using (UnityWebRequest req = new UnityWebRequest(BASE_URL + "/auth/login", "POST"))
+    {
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            LoginResponse res = JsonUtility.FromJson<LoginResponse>(req.downloadHandler.text);
+            accessToken = res.accessToken;
+            refreshToken = res.refreshToken;
+
+            if (res.mustChangePassword)
+            {
+                // Player must change password before doing anything else
+                Debug.Log("Password change required");
+            }
+        }
+        else
+        {
+            ApiError err = JsonUtility.FromJson<ApiError>(req.downloadHandler.text);
+            Debug.LogError($"Login failed: {err.message}");
+        }
+    }
+}
+```
+
 ---
 
 ### POST /auth/change-password
@@ -91,7 +329,7 @@ Authorization: Bearer {accessToken}
 **Auth**: Bearer token required
 **Rate Limit**: 100 requests per minute (global default)
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "currentPassword": "qAn8S6*6kjpA",
@@ -122,6 +360,44 @@ Authorization: Bearer {accessToken}
 { "error": "BadRequest", "message": "New password must be different from current password" }
 ```
 
+**C# Example:**
+```csharp
+IEnumerator ChangePassword(string currentPassword, string newPassword)
+{
+    ChangePasswordRequest body = new ChangePasswordRequest
+    {
+        currentPassword = currentPassword,
+        newPassword = newPassword
+    };
+    string json = JsonUtility.ToJson(body);
+
+    using (UnityWebRequest req = new UnityWebRequest(BASE_URL + "/auth/change-password", "POST"))
+    {
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            TokenResponse res = JsonUtility.FromJson<TokenResponse>(req.downloadHandler.text);
+            // IMPORTANT: Replace both tokens — old ones are revoked
+            accessToken = res.accessToken;
+            refreshToken = res.refreshToken;
+            Debug.Log("Password changed successfully");
+        }
+        else
+        {
+            ApiError err = JsonUtility.FromJson<ApiError>(req.downloadHandler.text);
+            Debug.LogError($"Change password failed: {err.message}");
+        }
+    }
+}
+```
+
 ---
 
 ### POST /auth/refresh
@@ -131,7 +407,7 @@ Authorization: Bearer {accessToken}
 **Auth**: None (the refresh token is sent in the body)
 **Rate Limit**: 100 requests per minute
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
@@ -158,6 +434,39 @@ Authorization: Bearer {accessToken}
 **Security — Reuse Detection:**
 If a revoked refresh token is reused (e.g., stolen token replay), the **entire token family** is revoked immediately. This forces all sessions for that user to re-authenticate. This is a military-grade security measure.
 
+**C# Example:**
+```csharp
+IEnumerator RefreshTokens()
+{
+    RefreshRequest body = new RefreshRequest { refreshToken = this.refreshToken };
+    string json = JsonUtility.ToJson(body);
+
+    using (UnityWebRequest req = new UnityWebRequest(BASE_URL + "/auth/refresh", "POST"))
+    {
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        // NOTE: No Authorization header needed for refresh
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            TokenResponse res = JsonUtility.FromJson<TokenResponse>(req.downloadHandler.text);
+            accessToken = res.accessToken;
+            refreshToken = res.refreshToken;
+        }
+        else
+        {
+            // Refresh failed — player must log in again
+            Debug.LogWarning("Session expired, redirecting to login");
+            GoToLoginScreen();
+        }
+    }
+}
+```
+
 ---
 
 ### POST /auth/logout
@@ -167,7 +476,7 @@ If a revoked refresh token is reused (e.g., stolen token replay), the **entire t
 **Auth**: Bearer token required
 **Rate Limit**: 100 requests per minute
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
@@ -181,6 +490,31 @@ If a revoked refresh token is reused (e.g., stolen token replay), the **entire t
 **Response (200 OK):**
 ```json
 { "message": "Logged out successfully" }
+```
+
+**C# Example:**
+```csharp
+IEnumerator Logout()
+{
+    LogoutRequest body = new LogoutRequest { refreshToken = this.refreshToken };
+    string json = JsonUtility.ToJson(body);
+
+    using (UnityWebRequest req = new UnityWebRequest(BASE_URL + "/auth/logout", "POST"))
+    {
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return req.SendWebRequest();
+
+        // Clear tokens regardless of response
+        accessToken = null;
+        refreshToken = null;
+        Debug.Log("Logged out");
+    }
+}
 ```
 
 ---
@@ -227,6 +561,58 @@ If a revoked refresh token is reused (e.g., stolen token replay), the **entire t
 | `version` | integer | Current version number. `0` if never saved. **Send this value back when saving.** |
 | `savedAt` | string (ISO 8601) | Last save timestamp (absent if no progress yet) |
 
+**C# Example:**
+```csharp
+// Your game state class — customize to match your actual game data
+[Serializable]
+public class MyGameState
+{
+    public int level;
+    public int score;
+    public string[] inventory;
+    public int[] checkpoints;
+}
+
+private int currentVersion = 0;
+
+IEnumerator LoadProgress()
+{
+    using (UnityWebRequest req = UnityWebRequest.Get(BASE_URL + "/progress"))
+    {
+        req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            string responseText = req.downloadHandler.text;
+
+            // Check if progress exists by looking at version
+            // Use a generic JSON parser to read version first
+            ProgressResponse res = JsonUtility.FromJson<ProgressResponse>(responseText);
+            currentVersion = res.version;
+
+            if (currentVersion == 0)
+            {
+                Debug.Log("No saved progress — starting fresh");
+                // Initialize default game state
+            }
+            else
+            {
+                // Deserialize progressData to your game state class
+                // Using Newtonsoft.Json (recommended for nested/dynamic JSON):
+                // MyGameState state = JsonConvert.DeserializeObject<MyGameState>(res.progressData);
+                Debug.Log($"Loaded progress v{currentVersion}, saved at {res.savedAt}");
+            }
+        }
+        else
+        {
+            HandleError(req);
+        }
+    }
+}
+```
+
 ---
 
 ### PUT /progress
@@ -236,7 +622,7 @@ If a revoked refresh token is reused (e.g., stolen token replay), the **entire t
 **Auth**: Bearer token required
 **Prerequisite**: Password must be changed
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "progressData": {
@@ -280,6 +666,51 @@ If a revoked refresh token is reused (e.g., stolen token replay), the **entire t
 2. Merge or replace local state as appropriate
 3. Retry `PUT /progress` with the correct `version`
 
+**C# Example:**
+```csharp
+IEnumerator SaveProgress(MyGameState gameState)
+{
+    // Serialize your game state to JSON string
+    string progressJson = JsonUtility.ToJson(gameState);
+
+    // Build the request body manually to embed progressData as raw JSON
+    // Using Newtonsoft.Json (recommended):
+    // string json = JsonConvert.SerializeObject(new { progressData = gameState, version = currentVersion });
+
+    // Using string formatting as a simpler alternative:
+    string json = $"{{\"progressData\":{progressJson},\"version\":{currentVersion}}}";
+
+    using (UnityWebRequest req = new UnityWebRequest(BASE_URL + "/progress", "PUT"))
+    {
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            ProgressResponse res = JsonUtility.FromJson<ProgressResponse>(req.downloadHandler.text);
+            currentVersion = res.version;  // Store new version for next save
+            Debug.Log($"Progress saved — v{currentVersion}");
+        }
+        else if (req.responseCode == 409)
+        {
+            // Version conflict — reload and retry
+            ConflictResponse conflict = JsonUtility.FromJson<ConflictResponse>(req.downloadHandler.text);
+            Debug.LogWarning($"Version conflict! Server has v{conflict.currentVersion}");
+            StartCoroutine(LoadProgress());  // Reload, then retry save
+        }
+        else
+        {
+            HandleError(req);
+        }
+    }
+}
+```
+
 ---
 
 ## 3. Event Submission
@@ -291,7 +722,7 @@ If a revoked refresh token is reused (e.g., stolen token replay), the **entire t
 **Auth**: Bearer token required
 **Prerequisite**: Password must be changed
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "events": [
@@ -330,6 +761,104 @@ If a revoked refresh token is reused (e.g., stolen token replay), the **entire t
 ```json
 {
   "submitted": 3
+}
+```
+
+**C# Example — Submitting Events:**
+```csharp
+IEnumerator SubmitEvents(GameEvent[] events)
+{
+    SubmitEventsRequest body = new SubmitEventsRequest { events = events };
+    string json = JsonUtility.ToJson(body);
+
+    using (UnityWebRequest req = new UnityWebRequest(BASE_URL + "/events", "POST"))
+    {
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            SubmitEventsResponse res = JsonUtility.FromJson<SubmitEventsResponse>(req.downloadHandler.text);
+            Debug.Log($"Submitted {res.submitted} events");
+        }
+        else
+        {
+            HandleError(req);
+        }
+    }
+}
+```
+
+**C# Example — Creating Each Event Type:**
+```csharp
+// Initial Assessment — send ONCE after first skill test
+GameEvent CreateInitialAssessmentEvent(float overallScore)
+{
+    InitialAssessmentPayload payload = new InitialAssessmentPayload
+    {
+        overallScore = overallScore  // REQUIRED — baseline for analytics
+    };
+    return new GameEvent
+    {
+        eventType = "initial_assessment",
+        payload = JsonUtility.ToJson(payload)
+    };
+}
+
+// Game Start — send each time player starts a session
+GameEvent CreateGameStartEvent(string moduleId, string difficulty)
+{
+    GameStartPayload payload = new GameStartPayload
+    {
+        moduleId = moduleId,
+        difficulty = difficulty
+    };
+    return new GameEvent
+    {
+        eventType = "game_start",
+        payload = JsonUtility.ToJson(payload)
+    };
+}
+
+// Game Complete — send each time player finishes a session
+GameEvent CreateGameCompleteEvent(float score, int completionTime, int attempts)
+{
+    GameCompletePayload payload = new GameCompletePayload
+    {
+        score = score,              // REQUIRED — tracked by analytics
+        completionTime = completionTime,
+        attemptsCount = attempts
+    };
+    return new GameEvent
+    {
+        eventType = "game_complete",
+        payload = JsonUtility.ToJson(payload)
+    };
+}
+
+// Usage:
+void OnAssessmentComplete(float score)
+{
+    GameEvent evt = CreateInitialAssessmentEvent(score);
+    eventQueue.Add(evt);
+}
+
+void OnGameStart(string moduleId)
+{
+    GameEvent evt = CreateGameStartEvent(moduleId, "normal");
+    eventQueue.Add(evt);
+}
+
+void OnGameFinished(float score, int time, int attempts)
+{
+    GameEvent evt = CreateGameCompleteEvent(score, time, attempts);
+    eventQueue.Add(evt);
+    FlushEvents();  // Send immediately on game complete
 }
 ```
 
@@ -451,7 +980,7 @@ These won't appear in the current dashboard charts but are available for future 
 **Auth**: Bearer token required
 **Prerequisite**: Password must be changed
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "platform": "android",
@@ -477,6 +1006,46 @@ These won't appear in the current dashboard charts but are available for future 
 }
 ```
 
+**C# Example:**
+```csharp
+IEnumerator RegisterDevice(string onesignalId, string deviceToken)
+{
+    RegisterDeviceRequest body = new RegisterDeviceRequest
+    {
+        #if UNITY_ANDROID
+        platform = "android",
+        #elif UNITY_IOS
+        platform = "ios",
+        #endif
+        onesignalPlayerId = onesignalId,
+        deviceToken = deviceToken
+    };
+    string json = JsonUtility.ToJson(body);
+
+    using (UnityWebRequest req = new UnityWebRequest(BASE_URL + "/devices/register", "POST"))
+    {
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            DeviceResponse res = JsonUtility.FromJson<DeviceResponse>(req.downloadHandler.text);
+            registeredDeviceId = res.id;  // Store for unregister
+            Debug.Log($"Device registered: {res.platform}, ID: {res.id}");
+        }
+        else
+        {
+            HandleError(req);
+        }
+    }
+}
+```
+
 ---
 
 ### POST /devices/unregister
@@ -486,7 +1055,7 @@ These won't appear in the current dashboard charts but are available for future 
 **Auth**: Bearer token required
 **Prerequisite**: Password must be changed
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "deviceId": "550e8400-e29b-41d4-a716-446655440000"
@@ -505,6 +1074,35 @@ These won't appear in the current dashboard charts but are available for future 
 **Error (404 Not Found):**
 ```json
 { "error": "NotFound", "message": "Device not found" }
+```
+
+**C# Example:**
+```csharp
+IEnumerator UnregisterDevice(string deviceId)
+{
+    UnregisterDeviceRequest body = new UnregisterDeviceRequest { deviceId = deviceId };
+    string json = JsonUtility.ToJson(body);
+
+    using (UnityWebRequest req = new UnityWebRequest(BASE_URL + "/devices/unregister", "POST"))
+    {
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log("Device unregistered");
+        }
+        else
+        {
+            HandleError(req);
+        }
+    }
+}
 ```
 
 ---
@@ -646,22 +1244,7 @@ This table maps which event payload fields are consumed by the admin analytics d
 
 ---
 
-## 9. Complete Request/Response Reference
-
-### Headers for All Authenticated Requests
-
-```
-Content-Type: application/json
-Authorization: Bearer {accessToken}
-```
-
-### Headers for Unauthenticated Requests (login, refresh, health)
-
-```
-Content-Type: application/json
-```
-
-### Endpoint Summary Table
+## 9. Endpoint Summary Table
 
 | # | Method | Path | Auth | Password Changed | Description |
 |---|--------|------|------|------------------|-------------|
@@ -680,49 +1263,521 @@ Content-Type: application/json
 
 ---
 
-## 10. Unity C# Integration Tips
+## 10. Reusable C# API Client
 
-### Recommended HTTP Client
-
-Use `UnityWebRequest` or a wrapper library. Set headers:
+A complete helper class you can drop into your Unity project. Handles token management, request building, error handling, and event batching.
 
 ```csharp
-request.SetRequestHeader("Content-Type", "application/json");
-request.SetRequestHeader("Authorization", "Bearer " + accessToken);
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Networking;
+
+public class RadStratApiClient : MonoBehaviour
+{
+    // ================================================================
+    //  CONFIGURATION
+    // ================================================================
+
+    private const string BASE_URL = "https://api-radstrat.devsparksbuild.com";
+
+    private string accessToken;
+    private string refreshToken;
+    private int currentProgressVersion = 0;
+    private string registeredDeviceId;
+
+    // Event batching
+    private List<GameEvent> eventQueue = new List<GameEvent>();
+    private float eventFlushInterval = 30f;  // seconds
+    private float lastFlushTime = 0f;
+
+    // ================================================================
+    //  TOKEN MANAGEMENT
+    // ================================================================
+
+    public bool IsLoggedIn => !string.IsNullOrEmpty(accessToken);
+    public bool HasRefreshToken => !string.IsNullOrEmpty(refreshToken);
+
+    private void SetTokens(string access, string refresh)
+    {
+        accessToken = access;
+        refreshToken = refresh;
+    }
+
+    private void ClearTokens()
+    {
+        accessToken = null;
+        refreshToken = null;
+    }
+
+    // ================================================================
+    //  HTTP HELPERS
+    // ================================================================
+
+    /// <summary>
+    /// Send a POST request with JSON body.
+    /// </summary>
+    private UnityWebRequest CreatePostRequest(string path, string jsonBody, bool auth = true)
+    {
+        UnityWebRequest req = new UnityWebRequest(BASE_URL + path, "POST");
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonBody);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        if (auth && !string.IsNullOrEmpty(accessToken))
+            req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+        return req;
+    }
+
+    /// <summary>
+    /// Send a PUT request with JSON body.
+    /// </summary>
+    private UnityWebRequest CreatePutRequest(string path, string jsonBody)
+    {
+        UnityWebRequest req = new UnityWebRequest(BASE_URL + path, "PUT");
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonBody);
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        if (!string.IsNullOrEmpty(accessToken))
+            req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+        return req;
+    }
+
+    /// <summary>
+    /// Send a GET request.
+    /// </summary>
+    private UnityWebRequest CreateGetRequest(string path)
+    {
+        UnityWebRequest req = UnityWebRequest.Get(BASE_URL + path);
+        if (!string.IsNullOrEmpty(accessToken))
+            req.SetRequestHeader("Authorization", "Bearer " + accessToken);
+        return req;
+    }
+
+    /// <summary>
+    /// Handle error responses consistently.
+    /// </summary>
+    private void HandleError(UnityWebRequest req, string context)
+    {
+        if (req.responseCode == 401)
+        {
+            Debug.LogWarning($"[API] {context}: Unauthorized — token may be expired");
+            // Attempt refresh or redirect to login
+        }
+        else if (req.responseCode == 429)
+        {
+            Debug.LogWarning($"[API] {context}: Rate limited — retry later");
+        }
+        else
+        {
+            try
+            {
+                ApiError err = JsonUtility.FromJson<ApiError>(req.downloadHandler.text);
+                Debug.LogError($"[API] {context}: {err.error} — {err.message}");
+            }
+            catch
+            {
+                Debug.LogError($"[API] {context}: HTTP {req.responseCode}");
+            }
+        }
+    }
+
+    // ================================================================
+    //  AUTH
+    // ================================================================
+
+    /// <summary>
+    /// Login with email and password. Callback receives LoginResponse or null on failure.
+    /// </summary>
+    public IEnumerator Login(string email, string password, Action<LoginResponse> callback)
+    {
+        LoginRequest body = new LoginRequest { email = email, password = password };
+
+        using (UnityWebRequest req = CreatePostRequest("/auth/login", JsonUtility.ToJson(body), auth: false))
+        {
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                LoginResponse res = JsonUtility.FromJson<LoginResponse>(req.downloadHandler.text);
+                SetTokens(res.accessToken, res.refreshToken);
+                callback?.Invoke(res);
+            }
+            else
+            {
+                HandleError(req, "Login");
+                callback?.Invoke(null);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Change password (mandatory on first login). Returns new tokens.
+    /// </summary>
+    public IEnumerator ChangePassword(string currentPw, string newPw, Action<bool> callback)
+    {
+        ChangePasswordRequest body = new ChangePasswordRequest
+        {
+            currentPassword = currentPw,
+            newPassword = newPw
+        };
+
+        using (UnityWebRequest req = CreatePostRequest("/auth/change-password", JsonUtility.ToJson(body)))
+        {
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                TokenResponse res = JsonUtility.FromJson<TokenResponse>(req.downloadHandler.text);
+                SetTokens(res.accessToken, res.refreshToken);
+                callback?.Invoke(true);
+            }
+            else
+            {
+                HandleError(req, "ChangePassword");
+                callback?.Invoke(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Refresh tokens. Returns true on success, false if re-login is needed.
+    /// </summary>
+    public IEnumerator RefreshTokens(Action<bool> callback)
+    {
+        if (!HasRefreshToken)
+        {
+            callback?.Invoke(false);
+            yield break;
+        }
+
+        RefreshRequest body = new RefreshRequest { refreshToken = this.refreshToken };
+
+        using (UnityWebRequest req = CreatePostRequest("/auth/refresh", JsonUtility.ToJson(body), auth: false))
+        {
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                TokenResponse res = JsonUtility.FromJson<TokenResponse>(req.downloadHandler.text);
+                SetTokens(res.accessToken, res.refreshToken);
+                callback?.Invoke(true);
+            }
+            else
+            {
+                ClearTokens();
+                callback?.Invoke(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Logout and clear all tokens.
+    /// </summary>
+    public IEnumerator Logout(Action callback)
+    {
+        LogoutRequest body = new LogoutRequest { refreshToken = this.refreshToken };
+
+        using (UnityWebRequest req = CreatePostRequest("/auth/logout", JsonUtility.ToJson(body)))
+        {
+            yield return req.SendWebRequest();
+            ClearTokens();
+            callback?.Invoke();
+        }
+    }
+
+    // ================================================================
+    //  PROGRESS
+    // ================================================================
+
+    /// <summary>
+    /// Load saved progress. Callback receives progressData JSON string and version.
+    /// </summary>
+    public IEnumerator LoadProgress(Action<string, int> callback)
+    {
+        using (UnityWebRequest req = CreateGetRequest("/progress"))
+        {
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                string text = req.downloadHandler.text;
+                ProgressResponse res = JsonUtility.FromJson<ProgressResponse>(text);
+                currentProgressVersion = res.version;
+
+                if (res.version == 0)
+                {
+                    callback?.Invoke(null, 0);  // No progress yet
+                }
+                else
+                {
+                    callback?.Invoke(res.progressData, res.version);
+                }
+            }
+            else
+            {
+                HandleError(req, "LoadProgress");
+                callback?.Invoke(null, -1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Save progress. Handles 409 conflict automatically by reloading.
+    /// </summary>
+    public IEnumerator SaveProgress(string progressDataJson, Action<bool> callback)
+    {
+        string json = $"{{\"progressData\":{progressDataJson},\"version\":{currentProgressVersion}}}";
+
+        using (UnityWebRequest req = CreatePutRequest("/progress", json))
+        {
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                ProgressResponse res = JsonUtility.FromJson<ProgressResponse>(req.downloadHandler.text);
+                currentProgressVersion = res.version;
+                callback?.Invoke(true);
+            }
+            else if (req.responseCode == 409)
+            {
+                Debug.LogWarning("[API] SaveProgress: Version conflict — reload needed");
+                callback?.Invoke(false);
+            }
+            else
+            {
+                HandleError(req, "SaveProgress");
+                callback?.Invoke(false);
+            }
+        }
+    }
+
+    // ================================================================
+    //  EVENTS
+    // ================================================================
+
+    /// <summary>
+    /// Queue an event for batched submission.
+    /// </summary>
+    public void QueueEvent(string eventType, string payloadJson)
+    {
+        eventQueue.Add(new GameEvent
+        {
+            eventType = eventType,
+            payload = payloadJson
+        });
+    }
+
+    /// <summary>
+    /// Convenience: Queue an initial_assessment event.
+    /// </summary>
+    public void QueueInitialAssessment(float overallScore)
+    {
+        InitialAssessmentPayload p = new InitialAssessmentPayload { overallScore = overallScore };
+        QueueEvent("initial_assessment", JsonUtility.ToJson(p));
+    }
+
+    /// <summary>
+    /// Convenience: Queue a game_start event.
+    /// </summary>
+    public void QueueGameStart(string moduleId = "", string difficulty = "")
+    {
+        GameStartPayload p = new GameStartPayload { moduleId = moduleId, difficulty = difficulty };
+        QueueEvent("game_start", JsonUtility.ToJson(p));
+    }
+
+    /// <summary>
+    /// Convenience: Queue a game_complete event.
+    /// </summary>
+    public void QueueGameComplete(float score, int completionTime = 0, int attempts = 0)
+    {
+        GameCompletePayload p = new GameCompletePayload
+        {
+            score = score,
+            completionTime = completionTime,
+            attemptsCount = attempts
+        };
+        QueueEvent("game_complete", JsonUtility.ToJson(p));
+    }
+
+    /// <summary>
+    /// Flush queued events to the server.
+    /// </summary>
+    public IEnumerator FlushEvents(Action<int> callback = null)
+    {
+        if (eventQueue.Count == 0)
+        {
+            callback?.Invoke(0);
+            yield break;
+        }
+
+        GameEvent[] batch = eventQueue.ToArray();
+        eventQueue.Clear();
+
+        SubmitEventsRequest body = new SubmitEventsRequest { events = batch };
+
+        using (UnityWebRequest req = CreatePostRequest("/events", JsonUtility.ToJson(body)))
+        {
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                SubmitEventsResponse res = JsonUtility.FromJson<SubmitEventsResponse>(req.downloadHandler.text);
+                callback?.Invoke(res.submitted);
+            }
+            else
+            {
+                // Re-queue events on failure
+                eventQueue.InsertRange(0, batch);
+                HandleError(req, "FlushEvents");
+                callback?.Invoke(-1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Auto-flush events periodically. Call this from Update().
+    /// </summary>
+    private void Update()
+    {
+        if (IsLoggedIn && eventQueue.Count > 0 && Time.time - lastFlushTime > eventFlushInterval)
+        {
+            lastFlushTime = Time.time;
+            StartCoroutine(FlushEvents());
+        }
+    }
+
+    // ================================================================
+    //  DEVICES
+    // ================================================================
+
+    /// <summary>
+    /// Register device for push notifications.
+    /// </summary>
+    public IEnumerator RegisterDevice(string onesignalId, string deviceToken, Action<DeviceResponse> callback)
+    {
+        RegisterDeviceRequest body = new RegisterDeviceRequest
+        {
+            #if UNITY_ANDROID
+            platform = "android",
+            #elif UNITY_IOS
+            platform = "ios",
+            #else
+            platform = "android",
+            #endif
+            onesignalPlayerId = onesignalId ?? "",
+            deviceToken = deviceToken ?? ""
+        };
+
+        using (UnityWebRequest req = CreatePostRequest("/devices/register", JsonUtility.ToJson(body)))
+        {
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                DeviceResponse res = JsonUtility.FromJson<DeviceResponse>(req.downloadHandler.text);
+                registeredDeviceId = res.id;
+                callback?.Invoke(res);
+            }
+            else
+            {
+                HandleError(req, "RegisterDevice");
+                callback?.Invoke(null);
+            }
+        }
+    }
+}
 ```
 
-### Token Storage
+### Usage Example
 
-- Store `accessToken` and `refreshToken` in memory (not PlayerPrefs for security)
-- On app backgrounding, persist encrypted tokens to secure storage
-- On app resume, check token validity and refresh if needed
+```csharp
+public class GameManager : MonoBehaviour
+{
+    RadStratApiClient api;
 
-### Event Batching
+    void Start()
+    {
+        api = gameObject.AddComponent<RadStratApiClient>();
+    }
 
-Instead of sending one event per API call, batch events locally and send them periodically:
+    // Called when player taps "Login" button
+    public void OnLoginPressed(string email, string password)
+    {
+        StartCoroutine(api.Login(email, password, (res) =>
+        {
+            if (res == null) return;
 
-```
-1. Collect events in a local queue (List<GameEvent>)
-2. Every 30 seconds (or on scene transition), POST /events with the batch
-3. On batch success, clear the queue
-4. On failure, retain events and retry on next interval
-5. On app close/background, flush remaining events immediately
-```
+            if (res.mustChangePassword)
+            {
+                ShowChangePasswordScreen();
+            }
+            else
+            {
+                StartCoroutine(OnLoginSuccess());
+            }
+        }));
+    }
 
-### Progress Save Strategy
+    IEnumerator OnLoginSuccess()
+    {
+        // Register device for push notifications
+        yield return api.RegisterDevice(OneSignal.GetPlayerId(), null, (device) =>
+        {
+            Debug.Log($"Device registered: {device?.id}");
+        });
 
-```
-1. On significant checkpoints (level complete, inventory change), save progress
-2. Auto-save every 2-5 minutes during gameplay
-3. Always include the current `version` from the last GET or PUT response
-4. Handle 409 by reloading progress and re-saving with correct version
+        // Load saved progress
+        yield return api.LoadProgress((progressJson, version) =>
+        {
+            if (version == 0)
+                Debug.Log("Fresh player — no saved progress");
+            else
+                Debug.Log($"Loaded progress v{version}");
+        });
+    }
+
+    // Called when player completes initial assessment
+    public void OnAssessmentComplete(float score)
+    {
+        api.QueueInitialAssessment(score);
+        StartCoroutine(api.FlushEvents());  // Send immediately
+    }
+
+    // Called when player starts a game session
+    public void OnGameStart(string moduleId)
+    {
+        api.QueueGameStart(moduleId, "normal");
+        // Events will auto-flush every 30 seconds via Update()
+    }
+
+    // Called when player finishes a game session
+    public void OnGameComplete(float score, int timeSec, int attempts)
+    {
+        api.QueueGameComplete(score, timeSec, attempts);
+        StartCoroutine(api.FlushEvents());  // Send immediately on completion
+    }
+
+    // Called at checkpoints or auto-save intervals
+    public void OnSaveProgress(MyGameState state)
+    {
+        string json = JsonUtility.ToJson(state);
+        StartCoroutine(api.SaveProgress(json, (success) =>
+        {
+            if (!success)
+                Debug.LogWarning("Save failed — may need to reload progress");
+        }));
+    }
+}
 ```
 
 ### Error Handling Pattern
 
 ```
-HTTP 401 → Token expired → Try refresh → If refresh fails → Re-login
-HTTP 409 → Version conflict → Reload progress → Retry save
-HTTP 429 → Rate limited → Wait and retry with exponential backoff
-HTTP 5xx → Server error → Retry with backoff (max 3 attempts)
+HTTP 401 → Token expired → Call RefreshTokens() → If false → Show login screen
+HTTP 409 → Version conflict → Call LoadProgress() → Retry SaveProgress()
+HTTP 429 → Rate limited → Wait 5 seconds → Retry
+HTTP 5xx → Server error → Retry up to 3 times with exponential backoff
 ```
