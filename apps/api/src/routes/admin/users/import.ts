@@ -11,6 +11,7 @@ export const adminImportRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Import users (whitelist)',
       description: 'Batch import players with temporary passwords. Skips existing emails. Max 500 per request.',
+      security: [{ adminBearerAuth: [] }],
       body: importUsersRequestSchema,
       response: {
         200: importResultSchema,

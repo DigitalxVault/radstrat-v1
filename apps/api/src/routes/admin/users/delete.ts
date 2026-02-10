@@ -13,6 +13,7 @@ export const adminDeleteUserRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Delete user (soft)',
       description: 'Soft-delete a user by setting isActive to false. Revokes all sessions.',
+      security: [{ adminBearerAuth: [] }],
       params: idParamSchema,
       response: {
         200: z.object({ message: z.string() }),

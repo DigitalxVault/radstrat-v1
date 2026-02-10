@@ -13,6 +13,7 @@ export const unregisterDeviceRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Devices'],
       summary: 'Unregister device',
       description: 'Deactivate a device (soft delete). The device record is kept for push history.',
+      security: [{ playerBearerAuth: [] }],
       body: unregisterDeviceRequestSchema,
       response: {
         200: messageResponseSchema,

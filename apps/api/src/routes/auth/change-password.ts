@@ -14,6 +14,7 @@ export const changePasswordRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Auth'],
       summary: 'Change password',
       description: 'Change the current password. Required on first login when mustChangePassword is true.',
+      security: [{ playerBearerAuth: [] }],
       body: changePasswordRequestSchema,
       response: {
         200: tokenResponseSchema,

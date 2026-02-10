@@ -12,6 +12,7 @@ export const adminChartsRoute: FastifyPluginAsyncZod = async (app) => {
       summary: 'Dashboard chart data',
       description:
         'Returns chart data: daily active users, completion rate, repeat players, engagement funnel, and score comparison.',
+      security: [{ adminBearerAuth: [] }],
       response: {
         200: chartsResponseSchema,
       },

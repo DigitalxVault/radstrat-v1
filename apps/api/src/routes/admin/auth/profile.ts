@@ -12,6 +12,7 @@ export const adminProfileRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Update admin profile',
       description: 'Update the authenticated admin user\'s first name and/or last name.',
+      security: [{ adminBearerAuth: [] }],
       body: adminUpdateProfileSchema,
       response: {
         200: userProfileSchema,

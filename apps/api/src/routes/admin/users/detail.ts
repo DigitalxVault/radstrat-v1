@@ -23,6 +23,7 @@ export const adminUserDetailRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Get user detail',
       description: 'Get detailed user information including progress summary and counts.',
+      security: [{ adminBearerAuth: [] }],
       params: idParamSchema,
       response: {
         200: userDetailResponseSchema,

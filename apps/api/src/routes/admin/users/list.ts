@@ -11,6 +11,7 @@ export const adminListUsersRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'List users',
       description: 'Paginated user list with search and filter support.',
+      security: [{ adminBearerAuth: [] }],
       querystring: userListQuerySchema,
       response: {
         200: userListResponseSchema,

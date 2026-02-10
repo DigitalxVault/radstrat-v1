@@ -11,6 +11,7 @@ export const adminLogoutRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Admin logout',
       description: 'Revoke the admin refresh token family.',
+      security: [{ adminBearerAuth: [] }],
       body: logoutRequestSchema,
       response: {
         200: messageResponseSchema,

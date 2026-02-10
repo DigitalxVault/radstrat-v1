@@ -11,6 +11,7 @@ export const adminMeRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Get current admin profile',
       description: 'Returns the authenticated admin user profile.',
+      security: [{ adminBearerAuth: [] }],
       response: {
         200: userProfileSchema,
       },

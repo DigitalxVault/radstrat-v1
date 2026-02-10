@@ -13,6 +13,7 @@ export const saveProgressRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Progress'],
       summary: 'Save player progress',
       description: 'Save progress data with optimistic concurrency. Send version=1 for first save, or the current version for updates. Returns 409 if version is stale.',
+      security: [{ playerBearerAuth: [] }],
       body: saveProgressRequestSchema,
       response: {
         200: progressResponseSchema,

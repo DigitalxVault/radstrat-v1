@@ -13,6 +13,7 @@ export const getProgressRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Progress'],
       summary: 'Get player progress',
       description: 'Load the latest saved progress for the authenticated player.',
+      security: [{ playerBearerAuth: [] }],
       response: {
         200: z.union([
           progressResponseSchema,

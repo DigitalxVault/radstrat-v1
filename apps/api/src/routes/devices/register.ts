@@ -12,6 +12,7 @@ export const registerDeviceRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Devices'],
       summary: 'Register device for push notifications',
       description: 'Register or update a device for push notifications. Idempotent — re-registering the same platform updates the existing record.',
+      security: [{ playerBearerAuth: [] }],
       body: registerDeviceRequestSchema,
       response: {
         200: deviceResponseSchema,

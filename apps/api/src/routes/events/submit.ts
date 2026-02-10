@@ -12,6 +12,7 @@ export const submitEventsRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Events'],
       summary: 'Submit gameplay events',
       description: 'Submit a batch of gameplay events (up to 100). Events are stored for analytics.',
+      security: [{ playerBearerAuth: [] }],
       body: submitEventsRequestSchema,
       response: {
         200: eventsResponseSchema,

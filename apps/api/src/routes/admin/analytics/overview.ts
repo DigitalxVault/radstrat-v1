@@ -19,6 +19,7 @@ export const adminAnalyticsOverviewRoute: FastifyPluginAsyncZod = async (app) =>
       tags: ['Analytics'],
       summary: 'Analytics overview',
       description: 'Aggregate metrics: total players, active players, recently active (7 days), progress saves, events.',
+      security: [{ adminBearerAuth: [] }],
       response: {
         200: analyticsOverviewSchema,
       },

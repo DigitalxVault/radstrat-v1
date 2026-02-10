@@ -13,6 +13,7 @@ export const adminUpdateUserRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Update user',
       description: 'Enable/disable user or force password change. Disabling revokes all sessions.',
+      security: [{ adminBearerAuth: [] }],
       params: idParamSchema,
       body: updateUserRequestSchema,
       response: {

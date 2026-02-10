@@ -14,6 +14,7 @@ export const adminChangePasswordRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Change admin password',
       description: 'Change the current admin password. Revokes all existing sessions and returns fresh tokens.',
+      security: [{ adminBearerAuth: [] }],
       body: changePasswordRequestSchema,
       response: {
         200: tokenResponseSchema,

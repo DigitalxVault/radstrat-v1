@@ -38,6 +38,7 @@ export const adminUserAnalyticsRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Analytics'],
       summary: 'Per-user analytics',
       description: 'User progress data and recent events.',
+      security: [{ adminBearerAuth: [] }],
       params: idParamSchema,
       querystring: paginationSchema,
       response: {

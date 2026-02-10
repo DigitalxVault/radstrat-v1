@@ -12,6 +12,7 @@ export const adminResetPasswordRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Admin'],
       summary: 'Reset user password',
       description: 'Generate a new temporary password. User must change it on next login. Revokes all sessions.',
+      security: [{ adminBearerAuth: [] }],
       params: idParamSchema,
       response: {
         200: resetPasswordResponseSchema,

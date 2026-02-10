@@ -11,6 +11,7 @@ export const logoutRoute: FastifyPluginAsyncZod = async (app) => {
       tags: ['Auth'],
       summary: 'Player logout',
       description: 'Revoke the refresh token family. The access token remains valid until expiry.',
+      security: [{ playerBearerAuth: [] }],
       body: logoutRequestSchema,
       response: {
         200: messageResponseSchema,
