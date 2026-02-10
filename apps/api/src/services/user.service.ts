@@ -8,6 +8,7 @@ interface ImportUser {
   email: string
   firstName: string
   lastName: string
+  role?: string
 }
 
 interface ImportResult {
@@ -53,7 +54,7 @@ export async function importUsers(users: ImportUser[]): Promise<ImportResult> {
           passwordHash,
           mustChangePassword: true,
           isActive: true,
-          role: 'PLAYER',
+          role: user.role ?? 'PLAYER',
         },
       })
 

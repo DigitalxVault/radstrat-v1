@@ -124,7 +124,7 @@ export function useImportUsers() {
   return useMutation<
     ImportResult,
     Error,
-    Array<{ email: string; firstName: string; lastName: string }>
+    Array<{ email: string; firstName: string; lastName: string; role?: string }>
   >({
     mutationFn: (users) =>
       api('/api/admin/users/import', {

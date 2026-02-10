@@ -45,6 +45,7 @@ export const importUserSchema = z.object({
   email: z.email(),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
+  role: z.enum(['PLAYER', 'SUPER_ADMIN']).optional().default('PLAYER'),
 })
 
 export const importUsersRequestSchema = z.object({

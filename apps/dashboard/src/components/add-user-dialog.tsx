@@ -25,6 +25,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [role, setRole] = useState<'PLAYER' | 'SUPER_ADMIN'>('PLAYER')
   const [result, setResult] = useState<{
     email: string
     temporaryPassword: string
@@ -40,7 +41,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
     }
 
     importUsers.mutate(
-      [{ email: email.trim(), firstName: firstName.trim(), lastName: lastName.trim() }],
+      [{ email: email.trim(), firstName: firstName.trim(), lastName: lastName.trim(), role }],
       {
         onSuccess: (data) => {
           if (data.created > 0 && data.temporaryPasswords.length > 0) {
@@ -68,6 +69,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
       setEmail('')
       setFirstName('')
       setLastName('')
+      setRole('PLAYER')
       setResult(null)
       importUsers.reset()
     }
@@ -143,6 +145,18 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                   placeholder="Last name"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-role">Role</Label>
+              <select
+                id="add-role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as 'PLAYER' | 'SUPER_ADMIN')}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="PLAYER">Player</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
+              </select>
             </div>
           </form>
         )}
