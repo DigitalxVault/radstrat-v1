@@ -1,10 +1,15 @@
-import { config } from 'dotenv'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
-// Load .env from monorepo root BEFORE any other imports that read process.env
+// Load .env from monorepo root in dev BEFORE any other imports that read process.env
+// Dynamic import avoids bundling dotenv's CJS require('fs') into ESM output
 const __dirname = dirname(fileURLToPath(import.meta.url))
-config({ path: resolve(__dirname, '../../../.env') })
+try {
+  const { config } = await import('dotenv')
+  config({ path: resolve(__dirname, '../../../.env') })
+} catch {
+  // dotenv not available in production — env vars set by deploy script
+}
 
 // Dynamic imports after env is loaded
 const { buildApp } = await import('./app.js')
