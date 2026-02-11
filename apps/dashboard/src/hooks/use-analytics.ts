@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * TanStack Query hooks for analytics — overview stats, user detail,
+ * chart data (score distribution, trends, top improvers, etc.).
+ * Stale time: 5 min for overview, 2 min for user-specific data.
+ */
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
 

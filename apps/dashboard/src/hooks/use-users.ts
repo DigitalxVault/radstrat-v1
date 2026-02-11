@@ -1,5 +1,9 @@
 'use client'
 
+/**
+ * TanStack Query hooks for user management — CRUD, import, password reset.
+ * All mutations invalidate the ['users'] query key to keep the table fresh.
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
 

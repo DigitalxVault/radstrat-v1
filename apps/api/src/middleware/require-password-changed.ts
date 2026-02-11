@@ -1,3 +1,8 @@
+/**
+ * Blocks access until the user changes their temporary password.
+ * Returns 403 PasswordChangeRequired so Unity/dashboard can redirect
+ * to the change-password flow.
+ */
 import { type FastifyRequest, type FastifyReply } from 'fastify'
 import { prisma } from '@repo/database'
 

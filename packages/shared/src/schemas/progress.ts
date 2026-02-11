@@ -1,3 +1,4 @@
+/** Player progress schemas — save/load game state from Unity. */
 import { z } from 'zod/v4'
 
 export const saveProgressRequestSchema = z.object({

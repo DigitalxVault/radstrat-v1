@@ -1,3 +1,4 @@
+/** Authentication schemas — login, token refresh, password change (player + admin). */
 import { z } from 'zod/v4'
 
 export const loginRequestSchema = z.object({

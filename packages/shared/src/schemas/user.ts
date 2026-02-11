@@ -1,3 +1,4 @@
+/** User management schemas — admin CRUD, list with pagination/sorting, import. */
 import { z } from 'zod/v4'
 
 export const userResponseSchema = z.object({

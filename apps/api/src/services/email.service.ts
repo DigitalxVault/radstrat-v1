@@ -1,3 +1,7 @@
+/**
+ * Transactional email via Resend. Gracefully degrades when RESEND_API_KEY
+ * is not configured — email failures never block auth operations.
+ */
 import { Resend } from 'resend'
 
 const resend = process.env.RESEND_API_KEY

@@ -1,5 +1,6 @@
 'use client'
 
+/** TanStack Query mutations for admin profile and password management. */
 import { useMutation } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
 

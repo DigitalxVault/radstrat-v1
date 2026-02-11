@@ -1,3 +1,4 @@
+/** Shared schemas reused across multiple routes — pagination, error responses. */
 import { z } from 'zod/v4'
 
 export const paginationSchema = z.object({

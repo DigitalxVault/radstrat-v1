@@ -1,3 +1,4 @@
+/** Gameplay event ingestion schemas — generic event type + JSON payload from Unity. */
 import { z } from 'zod/v4'
 
 export const submitEventSchema = z.object({

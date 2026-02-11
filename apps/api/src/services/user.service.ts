@@ -1,3 +1,8 @@
+/**
+ * User CRUD operations for admin management — list, create, update,
+ * bulk import (CSV), password reset, and soft delete. All mutations
+ * are admin-only; player self-service is handled via auth routes.
+ */
 import { prisma, Prisma } from '@repo/database'
 import { hashPassword } from '../lib/password.js'
 import { generateTempPassword } from '../lib/crypto.js'

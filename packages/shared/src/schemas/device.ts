@@ -1,3 +1,4 @@
+/** Device registration schemas for push notification targeting (OneSignal). */
 import { z } from 'zod/v4'
 
 export const registerDeviceRequestSchema = z.object({

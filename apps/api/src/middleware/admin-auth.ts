@@ -1,3 +1,7 @@
+/**
+ * Admin JWT authentication guard. Same as playerAuth but restricts
+ * to SUPER_ADMIN role. Used on all /admin/* routes.
+ */
 import { type FastifyRequest, type FastifyReply } from 'fastify'
 import { verifyToken } from '../lib/jwt.js'
 import { env } from '../config/env.js'

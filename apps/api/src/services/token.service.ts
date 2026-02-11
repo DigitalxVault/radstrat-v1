@@ -1,3 +1,8 @@
+/**
+ * Token lifecycle management — creation, refresh, and revocation.
+ * Implements family-based refresh token rotation with reuse detection
+ * to prevent stolen-token replay attacks (RSAF security requirement).
+ */
 import { prisma } from '@repo/database'
 import { signAccessToken, signRefreshToken, verifyToken } from '../lib/jwt.js'
 import { hashToken, generateFamily } from '../lib/crypto.js'

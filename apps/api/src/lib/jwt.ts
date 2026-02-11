@@ -1,3 +1,7 @@
+/**
+ * JWT sign/verify helpers using jose (Edge-compatible, no native deps).
+ * Access tokens: 1h. Refresh tokens: 7d player, 30d admin.
+ */
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose'
 
 const ACCESS_TOKEN_EXPIRY = '1h'

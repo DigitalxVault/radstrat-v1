@@ -1,3 +1,8 @@
+/**
+ * Player JWT authentication guard. Verifies Bearer token, checks user
+ * exists and is active, then attaches user context to request.user.
+ * Used on all /auth, /progress, /devices, /events routes.
+ */
 import { type FastifyRequest, type FastifyReply } from 'fastify'
 import { verifyToken } from '../lib/jwt.js'
 import { env } from '../config/env.js'

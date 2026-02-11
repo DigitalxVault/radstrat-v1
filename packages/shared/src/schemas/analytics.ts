@@ -1,3 +1,4 @@
+/** Analytics response schemas — overview stats, charts, user detail for dashboard. */
 import { z } from 'zod/v4'
 
 export const chartsResponseSchema = z.object({
