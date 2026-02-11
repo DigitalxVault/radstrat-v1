@@ -86,7 +86,7 @@ export function SidebarNav() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border px-4 py-3">
         <p className="text-[10px] text-muted-foreground text-center tracking-wider">
-          RADIO STRATEGY v1
+          RADSTRAT v1
         </p>
       </SidebarFooter>
     </Sidebar>

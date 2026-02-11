@@ -10,7 +10,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'RADSTRAT - Admin Dashboard',
-  description: 'Radio Strategy Training Administration',
+  description: 'RADSTRAT Training Administration',
 }
 
 export default function RootLayout({
