@@ -235,19 +235,99 @@ Build log tracking features, issues, debugging, and progress for the RADStrat ba
 
 ## Phase 3: Push Notifications + Automated Jobs
 
-**Status:** Not started
+**Status:** Deferred
 **Goal:** Automated push notifications and admin campaign management via OneSignal
+**Note:** Not blocking any current work. DB schema (PushNotification, Campaign tables) already exists. Will revisit after dashboard stabilises.
 
 ---
 
 ## Phase 4: Admin Dashboard
 
-**Status:** Not started
-**Goal:** Next.js admin UI for user management, campaigns, and analytics
+**Status:** Complete
+**Dates:** 2026-02-08 to 2026-02-10
+**Goal:** Next.js admin UI for user management, analytics, and settings
+
+### Features Added
+
+#### Login & Auth Flow (`1d29859`, `9c9f206`)
+- Cookie-based authentication (httpOnly, sameSite: strict)
+- Transparent token refresh on 401 (middleware + API proxy)
+- Access token: 1h JWT / 55 min cookie; Refresh token: 30d admin JWT / 30d cookie
+- Redirect to `/login` when unauthenticated, redirect to `/` when already logged in
+
+#### User Management (`1d29859`, `11ae34e`, `a53a151`, `6929168`)
+- Full CRUD: list, add (with role selector), edit, delete, reset password
+- CSV bulk import with validation and error reporting
+- Paginated table with search-by-name/email, status filter
+- User detail page with progress history and per-player analytics
+
+#### TanStack Table Refactor (`9c9f206`)
+- Replaced custom table with `@tanstack/react-table` v8
+- Server-side pagination and sorting via API `sortBy`/`sortOrder` params
+- Sort indicators (ArrowUp/Down/UpDown) on all sortable columns
+- Page size selector (10/20/50 rows)
+
+#### Analytics Overview (`2bbf91e`, `1d29859`)
+- 8 chart types: daily active users, completion rate, score distribution, score trends, event timeline, progress frequency, top improvers, role breakdown
+- Recharts-based responsive charts with Liquid Glass styling
+
+#### Settings Page (`a53a151`)
+- Admin profile editing (name, email)
+- Password change form
+
+#### Liquid Glass Design System (`1d29859`)
+- Mint (#A5E5D9) / purple (#B8A5E5) palette
+- Glassmorphism with backdrop-blur, translucent cards
+- 20-24px rounded corners, Inter font
+- Light mode default
+
+### Recent Improvements
+
+#### Admin Session Persistence Fix (`9c9f206`)
+- **Issue:** Users were logged out after ~14 minutes despite 1h JWT
+- **Root cause:** Cookie `maxAge` was 14 min (leftover from old 15 min access token), so the browser deleted the cookie well before JWT expiry
+- **Fix:** Aligned cookie maxAge to JWT expiry (55 min access, 30d refresh). Added transparent refresh-on-401 retry in API proxy.
+
+#### Branding Update (`fe4d131`)
+- All references updated from "Radio Strategy" to "RADSTRAT"
+
+### Verification
+- `pnpm build` succeeds (all 4 workspace packages)
+- Login flow tested with correct and incorrect credentials
+- User table pagination, sorting, search, and filter verified
+- Add/edit/delete/import/reset-password dialogs functional
+- Analytics charts render with real data
+- Session persists across browser refresh (30d admin refresh token)
 
 ---
 
 ## Phase 5: Analytics + Production Monitoring
 
-**Status:** Not started
+**Status:** Partial
 **Goal:** Analytics aggregation endpoints, CloudWatch alarms, structured logging
+
+### Completed
+- Analytics API endpoints: `GET /admin/analytics/overview`, `/users/:id`, `/charts`
+- Dashboard charts integrated (8 chart types)
+- Player improvement analytics (score trends, distribution, top improvers)
+
+### Not Started
+- CloudWatch alarms and structured logging
+- Performance monitoring and alerting
+
+---
+
+## Codebase Cleanup
+
+**Status:** Complete
+**Date:** 2026-02-11
+**Goal:** Code review, remove dead code, update documentation
+
+### Changes
+- Removed 12 orphan screenshots from repo root (~4.3 MB)
+- Removed unused `zod` dependency from dashboard
+- Aligned `argon2` version across packages (^0.44.0)
+- Removed unused hook imports from user-table component
+- Added module header comments to services, middleware, hooks, and shared schemas
+- Updated CHANGELOG to current state
+- Created codebase audit, code review, and cleanup reports
