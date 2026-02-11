@@ -40,7 +40,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useUsers, useUpdateUser, useResetPassword, useDeleteUser } from '@/hooks/use-users'
+import { useUsers } from '@/hooks/use-users'
 import { ResetPasswordDialog } from '@/components/reset-password-dialog'
 import { EditUserDialog } from '@/components/edit-user-dialog'
 import { DeleteUserDialog } from '@/components/delete-user-dialog'
@@ -110,10 +110,6 @@ export function UserTable() {
     sortBy,
     sortOrder,
   })
-
-  const updateUser = useUpdateUser()
-  const resetPassword = useResetPassword()
-  const deleteUser = useDeleteUser()
 
   const handleSearchChange = useCallback(
     (value: string) => {
