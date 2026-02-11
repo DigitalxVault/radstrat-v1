@@ -44,3 +44,8 @@ CLAUDE.md
 
 # Project docs (local-only)
 .docs/
+
+# Root-level screenshots (keep app assets and published docs)
+/*.png
+/*.jpg
+/*.jpeg
