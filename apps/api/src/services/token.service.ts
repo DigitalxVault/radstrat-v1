@@ -19,14 +19,18 @@ export async function createTokenPair(
   const family = generateFamily()
 
   const accessToken = await signAccessToken({ sub: userId, email, role }, accessSecret)
-  const refreshToken = await signRefreshToken({ sub: userId, email, role, family }, refreshSecret)
+  const refreshToken = await signRefreshToken({ sub: userId, email, role, family }, refreshSecret, isAdmin)
+
+  const refreshExpiryMs = isAdmin
+    ? 30 * 24 * 60 * 60 * 1000  // 30 days for admin
+    : 7 * 24 * 60 * 60 * 1000   // 7 days for player
 
   await prisma.refreshToken.create({
     data: {
       userId,
       tokenHash: hashToken(refreshToken),
       family,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + refreshExpiryMs),
     },
   })
 
@@ -81,14 +85,19 @@ export async function refreshTokenPair(
   const newRefreshToken = await signRefreshToken(
     { sub: payload.sub!, email: payload.email as string, role: payload.role as string, family: newFamily },
     refreshSecret,
+    isAdmin,
   )
+
+  const refreshExpiryMs = isAdmin
+    ? 30 * 24 * 60 * 60 * 1000  // 30 days for admin
+    : 7 * 24 * 60 * 60 * 1000   // 7 days for player
 
   await prisma.refreshToken.create({
     data: {
       userId: storedToken.userId,
       tokenHash: hashToken(newRefreshToken),
       family: newFamily,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + refreshExpiryMs),
     },
   })
 

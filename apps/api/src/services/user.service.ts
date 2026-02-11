@@ -77,10 +77,21 @@ interface ListUsersParams {
   search?: string
   isActive?: boolean
   role?: string
+  sortBy?: string
+  sortOrder?: string
+}
+
+const SORT_FIELD_MAP: Record<string, string> = {
+  name: 'firstName',
+  email: 'email',
+  role: 'role',
+  status: 'isActive',
+  lastLogin: 'lastLoginAt',
+  createdAt: 'createdAt',
 }
 
 export async function listUsers(params: ListUsersParams) {
-  const { page, limit, search, isActive, role } = params
+  const { page, limit, search, isActive, role, sortBy, sortOrder } = params
   const skip = (page - 1) * limit
 
   const where: Record<string, unknown> = {}
@@ -117,7 +128,7 @@ export async function listUsers(params: ListUsersParams) {
       },
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { [SORT_FIELD_MAP[sortBy ?? 'createdAt'] ?? 'createdAt']: sortOrder ?? 'desc' },
     }),
     prisma.user.count({ where }),
   ])

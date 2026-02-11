@@ -53,6 +53,8 @@ export function useUsers(params: {
   search?: string
   isActive?: string
   role?: string
+  sortBy?: string
+  sortOrder?: string
 }) {
   const searchParams = new URLSearchParams()
   if (params.page) searchParams.set('page', String(params.page))
@@ -60,6 +62,8 @@ export function useUsers(params: {
   if (params.search) searchParams.set('search', params.search)
   if (params.isActive) searchParams.set('isActive', params.isActive)
   if (params.role) searchParams.set('role', params.role)
+  if (params.sortBy) searchParams.set('sortBy', params.sortBy)
+  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder)
 
   const query = searchParams.toString()
 

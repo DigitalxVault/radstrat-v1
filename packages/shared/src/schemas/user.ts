@@ -23,6 +23,8 @@ export const userListQuerySchema = z.object({
     .transform((v) => v === 'true')
     .optional(),
   role: z.enum(['PLAYER', 'SUPER_ADMIN']).optional(),
+  sortBy: z.enum(['name', 'email', 'role', 'status', 'lastLogin', 'createdAt']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
 })
 
 export const userListResponseSchema = z.object({

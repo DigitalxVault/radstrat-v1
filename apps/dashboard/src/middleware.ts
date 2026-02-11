@@ -48,14 +48,14 @@ export async function middleware(request: NextRequest) {
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
           path: '/',
-          maxAge: 14 * 60,
+          maxAge: 55 * 60, // 55 minutes (access JWT is 1h)
         })
         response.cookies.set('radstrat_refresh', tokens.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
           path: '/',
-          maxAge: 6 * 24 * 60 * 60,
+          maxAge: 30 * 24 * 60 * 60, // 30 days (admin refresh JWT is 30d)
         })
 
         return response

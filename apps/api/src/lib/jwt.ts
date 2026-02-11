@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify, type JWTPayload } from 'jose'
 
 const ACCESS_TOKEN_EXPIRY = '1h'
 const REFRESH_TOKEN_EXPIRY = '7d'
+const ADMIN_REFRESH_TOKEN_EXPIRY = '30d'
 
 interface TokenPayload {
   sub: string
@@ -29,11 +30,12 @@ export async function signAccessToken(
 export async function signRefreshToken(
   payload: { sub: string; email: string; role: string; family: string },
   secret: string,
+  isAdmin = false,
 ): Promise<string> {
   return new SignJWT({ ...payload, type: 'refresh' })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(REFRESH_TOKEN_EXPIRY)
+    .setExpirationTime(isAdmin ? ADMIN_REFRESH_TOKEN_EXPIRY : REFRESH_TOKEN_EXPIRY)
     .sign(secretToKey(secret))
 }
 
