@@ -1,7 +1,6 @@
 # RADStrat v1 - Code Review Findings
 
 **Date:** 2026-02-11
-**Reviewer:** Claude Opus 4.6 (AI-assisted)
 **Scope:** Full codebase review — API, Dashboard, Database, Shared packages
 
 ---

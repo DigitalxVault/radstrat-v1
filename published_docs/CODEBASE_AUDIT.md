@@ -1,12 +1,11 @@
 # RADStrat v1 - Codebase Audit
 
 **Date:** 2026-02-11
-**Auditor:** Claude Opus 4.6 (AI-assisted)
 **Scope:** Full monorepo — apps/api, apps/dashboard, packages/database, packages/shared
 
 ---
 
-## GQ Playbook Alignment Checklist
+## Product Playbook Alignment Checklist
 
 | Artefact | Status | Location |
 |----------|--------|----------|

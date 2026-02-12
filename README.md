@@ -39,7 +39,7 @@ RADStrat is a Unity mobile RT training game. It provides player authentication, 
                         │          Turborepo Monorepo         │
                         │                                     │
   Unity Game ──────┐    │  apps/api          Fastify 5.7      │
-                   │    │  apps/dashboard    Next.js (Phase 4)│
+                   │    │  apps/dashboard    Next.js 15       │
   Admin Panel ─────┼───▶│  packages/database Prisma 7         │
                    │    │  packages/shared   Zod schemas      │
   Swagger UI ──────┘    │                                     │
@@ -61,15 +61,18 @@ RADStrat is a Unity mobile RT training game. It provides player authentication, 
 |-------|-----------|---------|
 | Runtime | Node.js 22 | Server runtime |
 | Framework | Fastify 5.7 | HTTP server + Zod type provider |
+| Dashboard | Next.js 15 + React 19 | Admin UI with Tailwind CSS 4 |
 | Language | TypeScript 5.9 | Type safety across the stack |
 | Database | PostgreSQL (RDS) | Relational data store |
 | ORM | Prisma 7 | Type-safe database access + migrations |
 | Validation | Zod 4 | Runtime validation + OpenAPI spec generation |
 | Auth | jose + argon2 | JWT signing + password hashing |
+| Data Tables | TanStack Table 8 | Sortable, filterable user management |
+| Charts | Recharts 2 | Analytics visualizations |
 | Build | tsup + Turborepo | ESM bundling + monorepo orchestration |
 | Process | PM2 | Production process management |
 | Proxy | Nginx + Certbot | TLS termination + security headers |
-| CI/CD | GitHub Actions | Auto-deploy on push to main |
+| CI/CD | GitHub Actions + Vercel | API auto-deploy to EC2, dashboard to Vercel |
 
 ---
 
@@ -180,20 +183,35 @@ radstrat-v1/
 │   │   │   │   ├── progress/   # Save/load game progress
 │   │   │   │   ├── devices/    # Device registration
 │   │   │   │   └── events/     # Gameplay event ingestion
-│   │   │   ├── services/       # Business logic (token, user)
+│   │   │   ├── services/       # Business logic (token, user, email)
 │   │   │   └── types/          # TypeScript declarations
 │   │   └── tsup.config.ts
-│   └── dashboard/              # Next.js admin UI (Phase 4)
+│   └── dashboard/              # Next.js 15 admin dashboard
+│       └── src/
+│           ├── app/
+│           │   ├── (auth)/login/       # Admin login
+│           │   └── (dashboard)/        # Authenticated pages
+│           │       ├── page.tsx        # Overview with analytics charts
+│           │       ├── users/          # User management (list + detail)
+│           │       └── settings/       # Admin profile & password
+│           ├── components/             # UI components
+│           │   ├── analytics-charts.tsx # Recharts visualizations
+│           │   ├── user-table.tsx      # TanStack Table with sort/filter
+│           │   ├── add-user-dialog.tsx  # Create user with role selector
+│           │   ├── import-dialog.tsx    # Bulk import (up to 500)
+│           │   └── ui/                 # shadcn/ui primitives
+│           ├── hooks/                  # React Query hooks (users, analytics, profile)
+│           └── lib/                    # API proxy, auth helpers
 ├── packages/
 │   ├── database/               # Prisma schema, client, migrations
 │   │   ├── prisma/
 │   │   │   └── schema.prisma
 │   │   └── prisma.config.ts
 │   └── shared/                 # Zod schemas shared across apps
-│       └── src/schemas/        # auth, user, progress, device, event
-├── docs/                       # Project documentation
-├── .github/workflows/          # CI/CD pipeline
-├── deploy.sh                   # Production deployment script
+│       └── src/schemas/        # auth, user, progress, device, event, analytics
+├── published_docs/             # Project documentation
+├── .github/workflows/          # CI/CD pipelines (deploy + seed)
+├── deploy.sh                   # Production deployment script (EC2)
 ├── ecosystem.config.cjs        # PM2 process configuration
 ├── turbo.json                  # Turborepo task pipeline
 └── package.json
@@ -263,7 +281,9 @@ This project is built for a military training context. Security measures include
 
 ## Deployment
 
-Production deploys automatically via GitHub Actions on push to `main`.
+### API (EC2)
+
+Auto-deploys via GitHub Actions on push to `main`.
 
 ```
 Push to main  →  GitHub Actions  →  SSH to EC2  →  deploy.sh
@@ -276,11 +296,16 @@ Push to main  →  GitHub Actions  →  SSH to EC2  →  deploy.sh
                                     health check ──────┘
 ```
 
+### Dashboard (Vercel)
+
+Auto-deploys from `main` branch via Vercel (root directory: `apps/dashboard`).
+
 | Component | Detail |
 |-----------|--------|
-| **Server** | EC2 (ap-southeast-1) |
+| **API Server** | EC2 (ap-southeast-1) |
+| **Dashboard** | Vercel (auto-deploy from main) |
 | **Database** | RDS PostgreSQL (private) |
-| **Domain** | `api-radstrat.devsparksbuild.com` |
+| **API Domain** | `api-radstrat.devsparksbuild.com` |
 | **TLS** | Let's Encrypt (Certbot auto-renew) |
 | **Process** | PM2 with reboot survival |
 | **Proxy** | Nginx reverse proxy |
@@ -294,8 +319,10 @@ Push to main  →  GitHub Actions  →  SSH to EC2  →  deploy.sh
 | 1 | AWS Infrastructure + Project Foundation | Done |
 | 2 | Player Auth + Progress + Admin Management | Done |
 | 3 | Push Notifications + Automated Jobs | Planned |
-| 4 | Admin Dashboard (Next.js) | Planned |
+| 4 | Admin Dashboard (Next.js) | In Progress |
 | 5 | Analytics + Production Monitoring | Planned |
+
+**Phase 4 progress:** Admin login, overview with analytics charts, user management (TanStack Table with sort/filter/search), user detail view, bulk import, add/edit/delete users, password reset, admin settings.
 
 ---
 
@@ -303,10 +330,12 @@ Push to main  →  GitHub Actions  →  SSH to EC2  →  deploy.sh
 
 | Document | Description |
 |----------|-------------|
-| [API Reference](docs/API.md) | Plain-language endpoint guide |
-| [Database Reference](docs/database-quick-reference.md) | Schema diagram and table details |
-| [Architecture Decision](docs/akshay.md) | Why separate backend vs Next.js API routes |
-| [Changelog](docs/CHANGELOG.md) | Detailed build log with issues and debugging |
+| [Unity API Endpoints](published_docs/UNITY_API_Endpoints.md) | Unity integration guide with C# models and UnityWebRequest examples |
+| [Changelog](published_docs/CHANGELOG.md) | Detailed build log with issues and debugging |
+| [Style Guide](published_docs/STYLE_GUIDE.md) | Liquid Glass design system specification |
+| [Code Review](published_docs/CODE_REVIEW.md) | Code quality findings and recommendations |
+| [Codebase Audit](published_docs/CODEBASE_AUDIT.md) | Architecture audit and improvement areas |
+| [Demo Players](published_docs/DEMO_players.md) | Test credentials for demo environment |
 
 ---
 
