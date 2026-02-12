@@ -303,17 +303,50 @@ Build log tracking features, issues, debugging, and progress for the RADStrat ba
 
 ## Phase 5: Analytics + Production Monitoring
 
-**Status:** Partial
+**Status:** Complete
+**Dates:** 2026-02-08 to 2026-02-12
 **Goal:** Analytics aggregation endpoints, CloudWatch alarms, structured logging
 
-### Completed
+### Features Added
+
+#### Analytics (completed in Phase 4 timeframe)
 - Analytics API endpoints: `GET /admin/analytics/overview`, `/users/:id`, `/charts`
 - Dashboard charts integrated (8 chart types)
 - Player improvement analytics (score trends, distribution, top improvers)
 
-### Not Started
-- CloudWatch alarms and structured logging
-- Performance monitoring and alerting
+#### Structured Pino Logging (`apps/api/src/app.ts`)
+- Production: JSON serializers output method, URL, userAgent, statusCode per request
+- Dev: pino-pretty with colorized output (unchanged)
+- Error logs include: `err.message`, `err.name`, `err.stack`, `statusCode`, `reqId`
+
+#### Request ID Plugin (`apps/api/src/plugins/request-id.ts`)
+- Generates `X-Request-ID` (UUID) per request, uses incoming header if present
+- Binds to Fastify `request.id` for automatic log correlation
+- Returns ID in `X-Request-Id` response header for client-side debugging
+
+#### CloudWatch Agent (EC2)
+- Installed `amazon-cloudwatch-agent` on EC2
+- Configured to ship PM2 logs to CloudWatch Logs group `/radstrat/api`
+- 30-day log retention
+- IAM role `RadStratEC2Role` with `RadStratCloudWatchPolicy` attached to EC2
+
+#### CloudWatch Alarms + SNS
+- SNS topic `radstrat-alerts` with email subscriber
+- Alarm `radstrat-5xx-errors`: fires on >5 errors with `statusCode >= 500` in 5 minutes
+- Alarm `radstrat-health-check`: fires on 3 consecutive health check failures
+
+#### PM2 Log Rotation (EC2)
+- `pm2-logrotate` module: 10 MB max, 7 retained files, compression enabled
+
+#### Deploy Script Update (`deploy.sh`)
+- Added CloudWatch Agent restart after PM2 reload (non-fatal if agent not installed)
+
+### Verification
+- Type checks pass (`pnpm check-types`)
+- Build succeeds (`pnpm build`)
+- CloudWatch Agent status: `running` on EC2
+- SNS email subscription confirmed
+- PM2 log rotation active
 
 ---
 

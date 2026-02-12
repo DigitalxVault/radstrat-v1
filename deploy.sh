@@ -63,4 +63,12 @@ sleep 3
 HEALTH=$(curl -sf http://localhost:3001/health 2>/dev/null) || error_exit "Health check failed — API not responding"
 log "Health check response: $HEALTH"
 
+# 10. Restart CloudWatch Agent (picks up any config changes)
+if command -v amazon-cloudwatch-agent-ctl &> /dev/null; then
+  log "Restarting CloudWatch Agent..."
+  sudo amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json || log "WARNING: CloudWatch Agent restart failed (non-fatal)"
+else
+  log "CloudWatch Agent not installed — skipping"
+fi
+
 log "=== Deployment completed successfully ==="

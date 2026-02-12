@@ -1,4 +1,4 @@
-import Fastify from 'fastify'
+import Fastify, { type FastifyServerOptions } from 'fastify'
 import {
   serializerCompiler,
   validatorCompiler,
@@ -11,6 +11,7 @@ import fastifyCors from '@fastify/cors'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyRateLimit from '@fastify/rate-limit'
 import { env } from './config/env.js'
+import { requestIdPlugin } from './plugins/request-id.js'
 import { healthRoutes } from './routes/health.js'
 import { authRoutes } from './routes/auth/index.js'
 import { adminRoutes } from './routes/admin/index.js'
@@ -19,17 +20,36 @@ import { devicesRoutes } from './routes/devices/index.js'
 import { eventsRoutes } from './routes/events/index.js'
 
 export async function buildApp() {
-  const app = Fastify({
-    logger: {
-      level: env.NODE_ENV === 'production' ? 'info' : 'debug',
-      ...(env.NODE_ENV !== 'production' && {
+  const isProduction = env.NODE_ENV === 'production'
+
+  const loggerOptions: FastifyServerOptions['logger'] = isProduction
+    ? {
+        level: 'info',
+        serializers: {
+          req(request) {
+            return {
+              method: request.method,
+              url: request.url,
+              userAgent: request.headers?.['user-agent'],
+            }
+          },
+          res(reply) {
+            return { statusCode: reply.statusCode }
+          },
+        },
+      }
+    : {
+        level: 'debug',
         transport: {
           target: 'pino-pretty',
           options: { colorize: true },
         },
-      }),
-    },
-  })
+      }
+
+  const app = Fastify({ logger: loggerOptions })
+
+  // Request ID (must be first — binds reqId to all logs)
+  await app.register(requestIdPlugin)
 
   // Zod type provider (MUST be before route registration)
   app.setValidatorCompiler(validatorCompiler)
@@ -124,7 +144,16 @@ export async function buildApp() {
       })
     }
 
-    app.log.error(error)
+    const err = error as Error
+    app.log.error({
+      err: {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+      },
+      statusCode,
+      reqId: _request.id,
+    }, 'request error')
     return reply.code(statusCode).send({
       error: statusCode >= 500 ? 'Internal Server Error' : 'Error',
       message: env.NODE_ENV === 'production'
